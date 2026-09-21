@@ -1,0 +1,1 @@
+console.log("Meeting AI background service started");
