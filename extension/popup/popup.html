@@ -1,19 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Meeting AI</title>
-    <link rel="stylesheet" href="popup.css">
+    <meta charset="UTF-8" />
+    <title>Echo — AI Meeting Assistant</title>
+    <link rel="stylesheet" href="popup.css" />
 </head>
-
 <body>
 
-    <h2>Meeting AI</h2>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <span class="logo-icon">🎙️</span>
+            <span class="logo-text">Echo</span>
+        </div>
+        <span class="version">AI Meeting Assistant</span>
+    </div>
 
-    <button id="startBtn">Start Meeting</button>
+    <!-- Status pill -->
+    <div id="statusPill" class="pill pill-idle">
+        <span class="pill-dot"></span>
+        <span id="statusText">Ready</span>
+    </div>
 
-    <p id="status">Not connected</p>
+    <!-- Meeting info (shown while recording) -->
+    <div id="meetingInfo" class="meeting-info" style="display:none">
+        <div class="info-row">
+            <span class="info-label">Meeting ID</span>
+            <span id="meetingIdText" class="info-value code">—</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Duration</span>
+            <span id="durationText" class="info-value">00:00</span>
+        </div>
+    </div>
+
+    <!-- Error message -->
+    <div id="errorBox" class="error-box" style="display:none">
+        <span id="errorText"></span>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions">
+        <button id="startBtn" class="btn btn-start">▶ Start Recording</button>
+        <button id="stopBtn"  class="btn btn-stop"  style="display:none">■ Stop Recording</button>
+    </div>
+
+    <!-- Footer hint -->
+    <div class="footer">
+        <span id="footerHint">Open Google Meet, then click Start.</span>
+    </div>
 
     <script src="popup.js"></script>
-
 </body>
 </html>
