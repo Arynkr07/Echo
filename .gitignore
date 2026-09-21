@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Environment variables — NEVER commit real keys
+.env
+
+# Temp audio from meetings
+backend/temp_audio/
+processing/meeting.wav
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (for extension / frontend)
+node_modules/
+dist/
+.next/

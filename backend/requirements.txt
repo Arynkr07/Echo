@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+websockets
+faster-whisper
+google-genai
+python-multipart
+python-dotenv
