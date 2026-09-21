@@ -277,3 +277,40 @@ You can test your WebSocket server using this simple HTML file (save locally and
 - [ ] Call `POST /meeting/:id/question` for "Ask Your Meeting"
 - [ ] Poll or use SSE/WebSocket from backend for live updates
 - [ ] Display `meetingId` in the UI (user can see which meeting)
+
+---
+
+## 11. Upcoming Features Roadmap (How to Implement)
+
+This section explains how we will build the 3 upcoming advanced features.
+
+### Feature 1: Speaker Diarization ("Who said what")
+**Goal:** Replace `speaker: "unknown"` with actual speaker detection so the AI summary knows exactly who agreed to which action item.
+**How to implement:**
+1. We added `pyannote.audio` to `requirements.txt`.
+2. In `backend/services/transcription.py`, import the pyannote pipeline:
+   `from pyannote.audio import Pipeline`
+3. Load the pipeline using a free HuggingFace token:
+   `pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.1", use_auth_token="YOUR_HF_TOKEN")`
+4. After converting WebM to WAV with FFmpeg, run the WAV through the pipeline:
+   `diarization = pipeline("audio.wav")`
+5. The pipeline returns a list of timeblocks mapped to `SPEAKER_00`, `SPEAKER_01`. Iterate through Whisper's `segments_iter` and match the timestamps to the Pyannote timeline to assign the correct speaker to each sentence.
+
+### Feature 2: Screenshot Capture (Multimodal Vision)
+**Goal:** Allow Gemini to see slides and code presented during the meeting.
+**How to implement:**
+1. **Frontend:** In `extension/background.js`, use `chrome.tabs.captureVisibleTab()` inside a `setInterval` that fires every 30-60 seconds while recording.
+2. Convert the image to base64 and send it over WebSocket with a new message type: `{"type": "screenshot", "image": "base64..."}`.
+3. **Backend:** In `extension_ws.py`, catch the `screenshot` event and save the base64 images into a new array in `meetings_db.json`.
+4. In `llm_service.py`, pass those images to Gemini along with the text. The Google GenAI SDK natively supports this:
+   `contents=["Analyze this meeting:", transcript_text, image1_bytes, image2_bytes]`
+
+### Feature 3: Whisper Model Upgrade (Better Accuracy)
+**Goal:** Fix instances where Whisper misunderstands accents or technical jargon.
+**How to implement:**
+1. Open `backend/services/transcription.py`.
+2. Change the initialization line from:
+   `self.model = WhisperModel("small", ...)`
+   to:
+   `self.model = WhisperModel("turbo", ...)`
+3. The `turbo` model provides near-flawless accuracy (comparable to `large-v3`) while remaining lightweight and extremely fast on CPU/GPU.

@@ -57,7 +57,8 @@ class TranscriptionService:
             audio_path,
             beam_size=5,
             language=None,          # auto-detect
-            task="transcribe"
+            task="transcribe",
+            vad_filter=True         # IMPORTANT: strips silence to prevent AI hallucinations
         )
 
         segments = []
@@ -80,26 +81,28 @@ class TranscriptionService:
 
     def transcribe_webm(self, webm_path: str) -> dict:
         """
-        Converts a WebM file (from the browser's MediaRecorder) to a
-        temporary WAV and then transcribes it.
-        The temporary WAV is deleted after transcription.
+        Converts the WebM file to WAV using a bundled FFmpeg executable,
+        then transcribes it. This safely handles Chrome's index-less WebM streams
+        which natively hang PyAV.
         """
         webm_path = Path(webm_path)
         if not webm_path.exists():
             raise FileNotFoundError(f"WebM file not found: {webm_path}")
 
-        # Write WAV to a temp file next to the webm
         wav_path = webm_path.with_suffix(".wav")
-
         try:
             self._convert_to_wav(str(webm_path), str(wav_path))
-            result = self.transcribe(str(wav_path))
+            return self.transcribe(str(wav_path))
+        except Exception as e:
+            print(f"[Whisper] Decoding failed: {e}")
+            return {
+                "language": "unknown",
+                "language_probability": 0.0,
+                "segments": []
+            }
         finally:
-            # Always clean up the temp WAV
             if wav_path.exists():
                 wav_path.unlink()
-
-        return result
 
     # ─────────────────────────────────────────────────────────────────────────
     # Internal helpers
@@ -107,9 +110,11 @@ class TranscriptionService:
 
     @staticmethod
     def _convert_to_wav(input_path: str, output_path: str):
-        """Use FFmpeg to convert any audio format → 16 kHz mono WAV."""
+        import imageio_ffmpeg
+        ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+        
         cmd = [
-            "ffmpeg",
+            ffmpeg_exe,
             "-y",
             "-i", input_path,
             "-ar", "16000",

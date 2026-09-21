@@ -23,7 +23,8 @@ let startTime        = null;
     try {
         const state = await chrome.runtime.sendMessage({ type: 'GET_STATE' });
         if (state?.recording) {
-            setRecordingUI(state.meetingId);
+            // Pass the original start time so the timer continues, not resets
+            setRecordingUI(state.meetingId, state.recordingStartTime);
         } else {
             setIdleUI();
         }
@@ -37,7 +38,7 @@ startBtn.addEventListener('click', async () => {
 
     hideError();
     startBtn.disabled = true;
-    setPill('Recording…', 'active');
+    setPill('Connecting…', 'idle');   // stay "idle" visually while connecting
     footerHint.textContent = 'Connecting to backend…';
 
     try {
@@ -74,7 +75,7 @@ stopBtn.addEventListener('click', async () => {
 
 // ── UI helpers ────────────────────────────────────────────────
 
-function setRecordingUI(mId) {
+function setRecordingUI(mId, startTimeMs) {
 
     // Buttons
     startBtn.style.display = 'none';
@@ -89,8 +90,9 @@ function setRecordingUI(mId) {
     meetingIdText.textContent = mId || '—';
     meetingInfo.style.display = 'block';
 
-    // Duration timer
-    startTime = Date.now();
+    // Duration timer — use background's original start time if available
+    // This keeps the timer continuous when the popup is closed and reopened
+    startTime = startTimeMs || Date.now();
     clearInterval(durationInterval);
     durationInterval = setInterval(updateDuration, 1000);
     updateDuration();

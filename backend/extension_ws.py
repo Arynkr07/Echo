@@ -85,17 +85,7 @@ async def handle_connection(ws):
                 session.meeting_id = meeting_id
 
                 # Use the extension's meeting_id directly (don't generate a new one)
-                meeting_service._meetings[meeting_id] = {
-                    "id":           meeting_id,
-                    "status":       "active",
-                    "started_at":   datetime.now().isoformat(),
-                    "ended_at":     None,
-                    "tab_url":      tab_url,
-                    "transcript":   [],
-                    "summary":      None,
-                    "decisions":    [],
-                    "action_items": []
-                }
+                meeting_service.create_meeting_with_id(meeting_id, tab_url)
 
                 print(f"[Ext-WS] Meeting started: {meeting_id} | {tab_url}")
 

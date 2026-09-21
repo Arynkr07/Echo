@@ -5,3 +5,5 @@ faster-whisper
 google-genai
 python-multipart
 python-dotenv
+imageio-ffmpeg
+pyannote.audio

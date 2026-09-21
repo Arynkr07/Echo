@@ -1,78 +1,75 @@
 // ============================================================
 // Echo Extension — Background Service Worker
-// Responsibilities:
-//   • Handle popup messages (START_CAPTURE / STOP_CAPTURE)
-//   • Manage the offscreen document for audio capture
-//   • Hold the WebSocket connection to the backend
-//   • Forward audio chunks + speaker/timestamp data to backend
-//   • Relay transcript/status updates back to the content script
+// NO ES module imports — everything is self-contained here.
 // ============================================================
 
-import { generateMeetingId } from './utils.js';
+// ── Inline utility (avoids ES module import issues) ──────────
+function generateMeetingId() {
+    const ts  = Date.now();
+    const rnd = Math.floor(Math.random() * 0xFFFF).toString(16).padStart(4, '0');
+    return `echo-${ts}-${rnd}`;
+}
 
-// ── State ────────────────────────────────────────────────────
-let recording     = false;
-let meetingId     = null;
-let targetTabId   = null;
-let ws            = null;           // WebSocket instance
-let wsReady       = false;
-let pendingChunks = [];             // buffered if ws not open yet
+// ── State ─────────────────────────────────────────────────────
+let recording          = false;
+let meetingId          = null;
+let targetTabId        = null;
+let recordingStartTime = null;   // ms timestamp — survives popup open/close
+let ws                 = null;
+let wsReady            = false;
+let pendingChunks      = [];
 
-const BACKEND_WS_URL = 'ws://localhost:3001';  // ← backend will run here
+const BACKEND_WS_URL = 'ws://localhost:3001';
 
-// ── Message Router ───────────────────────────────────────────
+// ── Message Router ────────────────────────────────────────────
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     switch (message.type) {
 
-        // ── Popup requests start ──────────────────────────────
         case 'START_CAPTURE':
             startCapture()
                 .then(() => sendResponse({ success: true, meetingId }))
                 .catch(err => {
-                    console.error('[BG] startCapture error:', err);
-                    sendResponse({ success: false, error: err.message });
+                    const msg = err.message || String(err);
+                    console.error('[BG] startCapture error:', msg);
+                    sendResponse({ success: false, error: msg });
                 });
-            return true;   // keep channel open for async sendResponse
+            return true;  // keep channel open for async sendResponse
 
-        // ── Popup requests stop ───────────────────────────────
         case 'STOP_CAPTURE':
             stopCapture()
                 .then(() => sendResponse({ success: true }))
                 .catch(err => sendResponse({ success: false, error: err.message }));
             return true;
 
-        // ── Offscreen sends an audio chunk ────────────────────
         case 'AUDIO_CHUNK':
             handleAudioChunk(message.chunk, message.mimeType);
             sendResponse({ received: true });
             return false;
 
-        // ── Content script sends speaker update ───────────────
         case 'SPEAKER_UPDATE':
             handleSpeakerUpdate(message.speaker, message.timestamp);
             sendResponse({ received: true });
             return false;
 
-        // ── Popup queries current state ───────────────────────
         case 'GET_STATE':
-            sendResponse({ recording, meetingId, wsReady });
+            sendResponse({ recording, meetingId, wsReady, recordingStartTime });
             return false;
     }
 });
 
-// ── Tab Lifecycle Listeners ──────────────────────────────────
-// Automatically stop capture if the Google Meet tab is closed or navigated away
+// ── Tab Lifecycle Listeners ───────────────────────────────────
 chrome.tabs.onRemoved.addListener((tabId) => {
     if (recording && targetTabId === tabId) {
-        console.log('[BG] Google Meet tab closed, stopping capture');
+        console.log('[BG] Meet tab closed — stopping capture');
         stopCapture();
     }
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-    if (recording && targetTabId === tabId && changeInfo.url && !changeInfo.url.startsWith('https://meet.google.com/')) {
-        console.log('[BG] Google Meet tab navigated away, stopping capture');
+    if (recording && targetTabId === tabId && changeInfo.url &&
+        !changeInfo.url.startsWith('https://meet.google.com/')) {
+        console.log('[BG] Meet tab navigated away — stopping capture');
         stopCapture();
     }
 });
@@ -82,46 +79,55 @@ async function startCapture() {
 
     if (recording) return;
 
-    // Identify the active Google Meet tab
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    // ── Find the Google Meet tab ──────────────────────────────
+    // Service workers have NO "currentWindow", so we query by URL instead.
+    const meetTabs = await chrome.tabs.query({ url: 'https://meet.google.com/*' });
 
-    if (!tab?.id) throw new Error('No active tab found');
-    if (!tab.url?.startsWith('https://meet.google.com/')) {
-        throw new Error('Please open Google Meet first');
+    if (meetTabs.length === 0) {
+        throw new Error('No Google Meet tab found. Open Google Meet first.');
+    }
+
+    // Pick the most recently accessed Meet tab
+    meetTabs.sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0));
+    const tab = meetTabs[0];
+
+    if (!tab.id) {
+        throw new Error('Could not access the Google Meet tab.');
+    }
+
+    // Validate it's a real meeting room (not /home, /about, etc.)
+    // Meeting URLs: meet.google.com/abc-defg-hij
+    const pathname = new URL(tab.url).pathname;
+    const isMeetingRoom = /^\/[a-z0-9]{3,4}-[a-z0-9]{3,4}-[a-z0-9]{3,4}/.test(pathname);
+    if (!isMeetingRoom) {
+        throw new Error('Please join a meeting room first (not the Google Meet home page).');
     }
 
     targetTabId = tab.id;
-    meetingId = generateMeetingId();
+    meetingId   = generateMeetingId();
 
-    console.log('[BG] Meeting ID:', meetingId, 'Tab ID:', targetTabId);
+    console.log('[BG] Starting capture | meeting:', meetingId, '| tab:', targetTabId);
 
-    // Connect WebSocket BEFORE starting audio
+    // ── Connect WebSocket ─────────────────────────────────────
     await connectWebSocket();
-
-    // Tell backend a meeting is starting
     wsSend({ type: 'meeting_start', meetingId, tabUrl: tab.url });
 
-    // Get tab audio stream
+    // ── Start audio capture ───────────────────────────────────
     const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id });
-
-    // Launch offscreen document (audio recorder lives there)
     await ensureOffscreenDocument();
+    await chrome.runtime.sendMessage({ type: 'START_RECORDING', streamId, meetingId });
 
-    // Tell offscreen doc to start recording
-    await chrome.runtime.sendMessage({
-        type: 'START_RECORDING',
-        streamId,
-        meetingId
-    });
+    // ── Start speaker detection (non-fatal) ───────────────────
+    try {
+        await chrome.tabs.sendMessage(tab.id, { type: 'START_SPEAKER_WATCH', meetingId });
+    } catch (e) {
+        // Content script might not be ready — audio still works without speaker labels
+        console.warn('[BG] Speaker watch skipped:', e.message);
+    }
 
-    // Tell content script to start watching for speakers
-    await chrome.tabs.sendMessage(tab.id, {
-        type: 'START_SPEAKER_WATCH',
-        meetingId
-    });
-
-    recording = true;
-    console.log('[BG] Recording started, meeting:', meetingId);
+    recording          = true;
+    recordingStartTime = Date.now();
+    console.log('[BG] Recording started ✓');
 }
 
 // ── Stop Capture ──────────────────────────────────────────────
@@ -129,27 +135,31 @@ async function stopCapture() {
 
     if (!recording) return;
 
-    // Tell offscreen to stop
-    await chrome.runtime.sendMessage({ type: 'STOP_RECORDING' });
+    // Stop audio recorder in offscreen
+    try {
+        await chrome.runtime.sendMessage({ type: 'STOP_RECORDING' });
+    } catch (e) {
+        console.warn('[BG] Offscreen stop failed:', e.message);
+    }
 
-    // Tell content script to stop watching
+    // Stop speaker watch in content script
     if (targetTabId) {
         chrome.tabs.sendMessage(targetTabId, { type: 'STOP_SPEAKER_WATCH' }).catch(() => {});
     }
 
-    // Tell backend meeting ended
+    // Notify backend
     wsSend({ type: 'meeting_end', meetingId });
 
-    recording = false;
-    meetingId = null;
-    targetTabId = null;
+    recording          = false;
+    meetingId          = null;
+    targetTabId        = null;
+    recordingStartTime = null;
 
-    console.log('[BG] Recording stopped');
+    console.log('[BG] Recording stopped ✓');
 }
 
-// ── Audio chunk handler ───────────────────────────────────────
+// ── Audio / Speaker handlers ──────────────────────────────────
 function handleAudioChunk(base64Audio, mimeType) {
-
     wsSend({
         type:      'audio_chunk',
         meetingId,
@@ -159,73 +169,54 @@ function handleAudioChunk(base64Audio, mimeType) {
     });
 }
 
-// ── Speaker update handler ────────────────────────────────────
 function handleSpeakerUpdate(speaker, timestamp) {
-
-    wsSend({
-        type:      'speaker_update',
-        meetingId,
-        speaker,
-        timestamp
-    });
+    wsSend({ type: 'speaker_update', meetingId, speaker, timestamp });
 }
 
-// ── WebSocket helpers ─────────────────────────────────────────
+// ── WebSocket ─────────────────────────────────────────────────
 function connectWebSocket() {
 
     return new Promise((resolve, reject) => {
 
-        if (ws && wsReady) {
-            resolve();
-            return;
-        }
+        if (ws && wsReady) { resolve(); return; }
 
         console.log('[WS] Connecting to', BACKEND_WS_URL);
-
         ws = new WebSocket(BACKEND_WS_URL);
 
         ws.onopen = () => {
-            console.log('[WS] Connected');
+            console.log('[WS] Connected ✓');
             wsReady = true;
-
-            // Flush any buffered chunks
-            pendingChunks.forEach(payload => ws.send(payload));
+            pendingChunks.forEach(p => ws.send(p));
             pendingChunks = [];
-
             resolve();
         };
 
         ws.onmessage = (event) => {
             try {
-                const data = JSON.parse(event.data);
-                handleBackendMessage(data);
+                handleBackendMessage(JSON.parse(event.data));
             } catch (e) {
                 console.warn('[WS] Non-JSON message:', event.data);
             }
         };
 
-        ws.onerror = (err) => {
-            console.error('[WS] Error:', err);
+        ws.onerror = () => {
             wsReady = false;
-            reject(new Error('WebSocket connection failed. Is the backend running on port 3001?'));
+            reject(new Error('Backend not reachable. Run: python extension_ws.py'));
         };
 
-        ws.onclose = (event) => {
-            console.log('[WS] Closed:', event.code, event.reason);
+        ws.onclose = () => {
             wsReady = false;
-            ws = null;
-
-            // Auto-stop recording if backend disconnects
+            ws      = null;
             if (recording) {
                 recording = false;
-                console.warn('[BG] WebSocket closed during recording. Stopped.');
+                console.warn('[BG] WS closed mid-recording. Stopped.');
             }
         };
 
-        // Timeout if backend not reachable
+        // 5 second timeout
         setTimeout(() => {
             if (!wsReady) {
-                reject(new Error('WebSocket timeout. Is the backend running on port 3001?'));
+                reject(new Error('Backend timeout (5s). Is extension_ws.py running?'));
             }
         }, 5000);
     });
@@ -235,22 +226,16 @@ function wsSend(data) {
     const payload = JSON.stringify(data);
     if (ws && wsReady) {
         ws.send(payload);
+    } else if (data.type !== 'audio_chunk') {
+        pendingChunks.push(payload);   // buffer metadata
     } else {
-        // Buffer small metadata messages; drop large audio if not connected
-        if (data.type !== 'audio_chunk') {
-            pendingChunks.push(payload);
-        } else {
-            console.warn('[WS] Not connected — dropping audio chunk');
-        }
+        console.warn('[WS] Not connected — dropping audio chunk');
     }
 }
 
-// ── Handle messages from backend ──────────────────────────────
+// ── Handle backend → extension messages ───────────────────────
 function handleBackendMessage(data) {
-
-    console.log('[BG] Backend message:', data.type);
-
-    // Forward transcript/AI updates to the content script (for overlay)
+    console.log('[BG] ← Backend:', data.type);
     if (['transcript_update', 'ai_update', 'status'].includes(data.type)) {
         chrome.tabs.query({ url: 'https://meet.google.com/*' }, (tabs) => {
             tabs.forEach(tab => {
@@ -260,7 +245,7 @@ function handleBackendMessage(data) {
     }
 }
 
-// ── Offscreen document management ─────────────────────────────
+// ── Offscreen document ────────────────────────────────────────
 async function ensureOffscreenDocument() {
 
     const existing = await chrome.runtime.getContexts({
@@ -276,5 +261,8 @@ async function ensureOffscreenDocument() {
         justification: 'Capture Google Meet audio for transcription'
     });
 
-    console.log('[BG] Offscreen document created');
+    // Wait a moment for the offscreen script to load and register its listeners
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    console.log('[BG] Offscreen document created ✓');
 }
