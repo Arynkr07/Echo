@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Echo",
+  "version": "1.0.0",
+  "description": "AI-powered meeting assistant for Google Meet",
+
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+
+  "permissions": [
+    "activeTab",
+    "tabCapture",
+    "offscreen",
+    "storage",
+    "tabs"
+  ],
+
+  "host_permissions": [
+    "https://meet.google.com/*"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://meet.google.com/*"
+      ],
+      "js": [
+        "content/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "background": {
+    "service_worker": "background/background.js"
+  }
+}
