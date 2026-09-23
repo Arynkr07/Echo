@@ -17,7 +17,7 @@ from pydantic import BaseModel
 import services.meeting_service as meeting_service
 import services.llm_service as llm_service
 
-router = APIRouter(prefix="/meeting", tags=["question"])
+router = APIRouter(prefix="/api/meeting", tags=["question"])
 
 
 class QuestionRequest(BaseModel):

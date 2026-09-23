@@ -1,7 +1,6 @@
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 export interface TranscriptItem {
-  id?: string;
   speaker: string;
   time: string;
   text: string;
@@ -32,76 +31,106 @@ export interface DashboardMetrics {
   teamEngagementPercent: number;
 }
 
+export interface Meeting {
+  id: string;
+  status: string;
+  started_at: string;
+  ended_at: string | null;
+}
+
 export const api = {
-  // 1. Fetch real-time transcript stream for the active session
-  async getLiveTranscript(sessionId: string = "default"): Promise<TranscriptItem[]> {
+  /** Get the best meeting to display: most recent one with a summary, else most recent with a transcript, else most recent overall. */
+  async getLatestMeeting(): Promise<Meeting | null> {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/meetings/${sessionId}/transcript`, {
-        cache: "no-store",
-      });
+      const res = await fetch(`${BACKEND_URL}/api/meeting`, { cache: "no-store" });
+      if (!res.ok) return null;
+      const meetings: Meeting[] = await res.json();
+      if (!meetings.length) return null;
+
+      // Sort all meetings newest-first
+      const sorted = meetings.sort(
+        (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+      );
+
+      // Prefer: has summary > has transcript > just most recent
+      const withSummary    = sorted.find((m) => (m as any).has_summary);
+      const withTranscript = sorted.find((m) => (m as any).has_transcript);
+      return withSummary ?? withTranscript ?? sorted[0];
+    } catch {
+      return null;
+    }
+  },
+
+  /** Fetch transcript segments for a given meeting. */
+  async getLiveTranscript(meetingId: string): Promise<TranscriptItem[]> {
+    try {
+      const res = await fetch(
+        `${BACKEND_URL}/api/meeting/${meetingId}/transcript`,
+        { cache: "no-store" }
+      );
       if (!res.ok) throw new Error("Failed to fetch transcript");
-      return await res.json();
+      const data = await res.json();
+      // Backend returns { segments: [{ speaker, time, text, ... }] }
+      return (data.segments || []) as TranscriptItem[];
     } catch {
-      // Fallback stub for offline dev
-      return [
-        { speaker: "Rahul", time: "10:32 AM", text: "Let us lock down the core deliverables for the upcoming milestone." },
-        { speaker: "Aryan", time: "10:34 AM", text: "Backend API endpoints and the Whisper ingestion stream will be operational by Oct 5." },
-        { speaker: "Rahul", time: "10:36 AM", text: "Understood. I will align presentation assets and slide reviews for Oct 8." },
-      ];
+      return [];
     }
   },
 
-async getMeetingIntelligence(sessionId: string = "default"): Promise<MeetingSummary> {
+  /** Fetch AI summary, decisions, and action items for a given meeting. */
+  async getMeetingIntelligence(meetingId: string): Promise<MeetingSummary | null> {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/meetings/${sessionId}/summary`, {
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `${BACKEND_URL}/api/meeting/${meetingId}/summary`,
+        { cache: "no-store" }
+      );
       if (!res.ok) throw new Error("Failed to fetch meeting intelligence");
+      // Backend already returns { summary, decisions, actions: [{ id, title, owner, due, done }] }
       return await res.json();
     } catch {
-      return {
-        summary: "The core roadmap milestones are confirmed. Priority is placed on concluding the WebSocket ingestion bridge and the local Faster-Whisper pipeline by October 5.",
-        decisions: [
-          "MVP target release scheduled for October 15.",
-          "All audio processing executes locally with zero external stream leaks."
-        ],
-        actions: [
-          { id: 1, title: "Finalize Whisper STT chunk pipeline", owner: "Aryan", due: "Oct 5", done: true },
-          { id: 2, title: "Prepare architecture presentation deck", owner: "Rahul", due: "Oct 8", done: false },
-        ]
-      };
+      return null;
     }
   },
 
-async getDashboardMetrics(): Promise<DashboardMetrics> {
+  /** Fetch aggregate dashboard metrics. */
+  async getDashboardMetrics(): Promise<DashboardMetrics> {
     try {
       const res = await fetch(`${BACKEND_URL}/api/metrics`, { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to fetch metrics");
       return await res.json();
     } catch {
+      // Fallback stub so the dashboard still renders offline
       return {
-        totalMeetings: 48,
-        transcribedPercent: 92,
-        totalActions: 134,
-        completedPercent: 66,
-        avgLengthMin: 38,
-        hoursSaved: 18.4,
+        totalMeetings: 0,
+        transcribedPercent: 0,
+        totalActions: 0,
+        completedPercent: 0,
+        avgLengthMin: 0,
+        hoursSaved: 0,
         sentimentPercent: 92,
-        teamEngagementPercent: 84
+        teamEngagementPercent: 84,
       };
     }
   },
 
-async toggleTaskStatus(taskId: number, completed: boolean): Promise<boolean> {
+  /** Ask a question about a specific meeting. */
+  async askQuestion(meetingId: string, question: string): Promise<string> {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/tasks/${taskId}`, {
-        method: "PATCH",
+      const res = await fetch(`${BACKEND_URL}/api/meeting/${meetingId}/question`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ done: completed }),
+        body: JSON.stringify({ question }),
       });
-      return res.ok;
+      if (!res.ok) throw new Error("Failed to ask question");
+      const data = await res.json();
+      return data.answer || "No answer returned.";
     } catch {
-      return true;
+      return "Could not reach backend.";
     }
-  }
+  },
+
+  /** Toggle a task's done status locally (tasks are not persisted separately). */
+  toggleTaskStatus(tasks: TaskItem[], taskId: number): TaskItem[] {
+    return tasks.map((t) => (t.id === taskId ? { ...t, done: !t.done } : t));
+  },
 };

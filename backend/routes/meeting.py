@@ -4,24 +4,35 @@ routes/meeting.py
 REST API for meeting management.
 
 Endpoints:
-  POST /meeting/start                    → create a new meeting, get meeting_id
-  POST /meeting/end/{meeting_id}         → end a meeting
-  GET  /meeting                          → list all meetings
-  GET  /meeting/{meeting_id}             → get meeting info
-  GET  /meeting/{meeting_id}/transcript  → get transcript segments (with language)
-  GET  /meeting/{meeting_id}/summary     → get AI summary (triggers Gemini if needed)
+  POST /api/meeting/start                    → create a new meeting
+  POST /api/meeting/end/{meeting_id}         → end a meeting
+  GET  /api/meeting                          → list all meetings
+  GET  /api/meeting/{meeting_id}             → get meeting info
+  GET  /api/meeting/{meeting_id}/transcript  → get transcript segments
+  GET  /api/meeting/{meeting_id}/summary     → get AI summary
+  GET  /api/metrics                          → dashboard aggregate stats
 """
 
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 import services.meeting_service as meeting_service
 import services.llm_service as llm_service
 
-router = APIRouter(prefix="/meeting", tags=["meeting"])
+router = APIRouter(tags=["meeting"])
+
+
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+
+def _format_time(seconds: float) -> str:
+    """Convert float seconds to a relative 'MM:SS' string."""
+    mins = int(seconds // 60)
+    secs = int(seconds % 60)
+    return f"{mins:02d}:{secs:02d}"
 
 
 # ─── Start / End ──────────────────────────────────────────────────────────────
 
-@router.post("/start")
+@router.post("/api/meeting/start")
 async def start_meeting():
     """Create a new meeting and return its ID."""
     meeting = meeting_service.create_meeting()
@@ -32,17 +43,13 @@ async def start_meeting():
     }
 
 
-@router.post("/end/{meeting_id}")
+@router.post("/api/meeting/end/{meeting_id}")
 async def end_meeting(meeting_id: str, background_tasks: BackgroundTasks):
-    """
-    End a meeting.
-    Triggers AI analysis in the background so the response is instant.
-    """
+    """End a meeting. Triggers AI analysis in the background."""
     meeting = meeting_service.end_meeting(meeting_id)
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
 
-    # If there's a transcript, kick off AI analysis in background
     transcript = meeting_service.get_transcript(meeting_id)
     if transcript:
         background_tasks.add_task(_run_ai_analysis, meeting_id, transcript)
@@ -55,84 +62,101 @@ async def end_meeting(meeting_id: str, background_tasks: BackgroundTasks):
     }
 
 
-# ─── Get ──────────────────────────────────────────────────────────────────────
+# ─── List / Get ───────────────────────────────────────────────────────────────
 
-@router.get("")
+@router.get("/api/meeting")
 async def list_meetings():
-    """List all meetings (lightweight — no transcript data)."""
-    return meeting_service.list_meetings()
+    """List all meetings (lightweight — includes content flags for smart selection)."""
+    meetings = meeting_service.list_meetings()
+    return meetings
 
 
-@router.get("/{meeting_id}")
+@router.get("/api/meeting/{meeting_id}")
 async def get_meeting(meeting_id: str):
     """Get full meeting info including AI results (if ready)."""
     meeting = meeting_service.get_meeting(meeting_id)
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
-    # Don't include raw transcript in this response — use /transcript endpoint
     return {
-        "id":           meeting["id"],
-        "status":       meeting["status"],
-        "started_at":   meeting["started_at"],
-        "ended_at":     meeting["ended_at"],
-        "summary":      meeting["summary"],
-        "decisions":    meeting["decisions"],
-        "action_items": meeting["action_items"],
+        "id":                  meeting["id"],
+        "status":              meeting["status"],
+        "started_at":          meeting["started_at"],
+        "ended_at":            meeting["ended_at"],
+        "summary":             meeting["summary"],
+        "decisions":           meeting["decisions"],
+        "action_items":        meeting["action_items"],
         "transcript_segments": len(meeting["transcript"])
     }
 
 
-@router.get("/{meeting_id}/transcript")
+@router.get("/api/meeting/{meeting_id}/transcript")
 async def get_transcript(meeting_id: str):
-    """
-    Return all transcript segments with full language metadata.
-    Each segment:
-    {
-        "speaker": "Aryan",
-        "start": 0.0,
-        "end": 5.2,
-        "text": "Let's finalize the launch date.",
-        "language": "en",
-        "language_probability": 0.97
-    }
-    """
+    """Return all transcript segments with formatted timestamps."""
     transcript = meeting_service.get_transcript(meeting_id)
     if transcript is None:
         raise HTTPException(status_code=404, detail="Meeting not found")
 
     meeting = meeting_service.get_meeting(meeting_id)
+    first = meeting.get("transcript", [{}])[0] if meeting.get("transcript") else {}
+
+    # Map backend segment shape → frontend TranscriptItem shape
+    segments = [
+        {
+            "speaker":              seg.get("speaker", "unknown"),
+            "time":                 _format_time(seg.get("start", 0)),
+            "text":                 seg.get("text", ""),
+            # keep raw fields for developer use
+            "start":                seg.get("start"),
+            "end":                  seg.get("end"),
+            "language":             seg.get("language"),
+            "language_probability": seg.get("language_probability"),
+        }
+        for seg in transcript
+    ]
+
     return {
         "meeting_id":           meeting_id,
-        "detected_language":    meeting.get("transcript", [{}])[0].get("language")    if meeting.get("transcript") else None,
-        "language_probability": meeting.get("transcript", [{}])[0].get("language_probability") if meeting.get("transcript") else None,
+        "detected_language":    first.get("language"),
+        "language_probability": first.get("language_probability"),
         "segment_count":        len(transcript),
-        "segments":             transcript
+        "segments":             segments,
     }
 
 
-@router.get("/{meeting_id}/summary")
+@router.get("/api/meeting/{meeting_id}/summary")
 async def get_summary(meeting_id: str):
-    """
-    Return AI-generated summary, decisions, and action items.
-    If analysis hasn't run yet (meeting still active), runs it now.
-    """
+    """Return AI-generated summary, decisions, and action items."""
     meeting = meeting_service.get_meeting(meeting_id)
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
 
     # Return cached result if available
     if meeting.get("summary"):
+        action_items = meeting["action_items"] or []
         return {
-            "meeting_id":   meeting_id,
-            "summary":      meeting["summary"],
-            "decisions":    meeting["decisions"],
-            "action_items": meeting["action_items"]
+            "meeting_id": meeting_id,
+            "summary":    meeting["summary"],
+            "decisions":  meeting["decisions"],
+            # frontend calls this key "actions"
+            "actions":    [
+                {
+                    "id":    idx + 1,
+                    "title": item.get("task", ""),
+                    "owner": item.get("owner", ""),
+                    "due":   item.get("deadline") or "TBD",
+                    "done":  False,
+                }
+                for idx, item in enumerate(action_items)
+            ],
         }
 
     # Run analysis now (synchronously — user is waiting)
     transcript = meeting_service.get_transcript(meeting_id)
     if not transcript:
-        raise HTTPException(status_code=400, detail="No transcript available yet. Wait for audio to be transcribed.")
+        raise HTTPException(
+            status_code=400,
+            detail="No transcript available yet. Wait for audio to be transcribed."
+        )
 
     result = llm_service.analyse_meeting(transcript)
     meeting_service.save_ai_results(
@@ -143,10 +167,68 @@ async def get_summary(meeting_id: str):
     )
 
     return {
-        "meeting_id":   meeting_id,
-        "summary":      result["summary"],
-        "decisions":    result["decisions"],
-        "action_items": result["action_items"]
+        "meeting_id": meeting_id,
+        "summary":    result["summary"],
+        "decisions":  result["decisions"],
+        "actions":    [
+            {
+                "id":    idx + 1,
+                "title": item.get("task", ""),
+                "owner": item.get("owner", ""),
+                "due":   item.get("deadline") or "TBD",
+                "done":  False,
+            }
+            for idx, item in enumerate(result["action_items"])
+        ],
+    }
+
+
+# ─── Metrics ──────────────────────────────────────────────────────────────────
+
+@router.get("/api/metrics")
+async def get_metrics():
+    """Compute real aggregate stats from the meetings database for the dashboard."""
+    all_meetings = meeting_service.list_meetings()
+    all_full     = [meeting_service.get_meeting(m["id"]) for m in all_meetings]
+
+    total_meetings = len(all_full)
+
+    # Count meetings that have at least one transcript segment
+    transcribed = sum(1 for m in all_full if m and m.get("transcript"))
+    transcribed_pct = round((transcribed / total_meetings * 100) if total_meetings else 0)
+
+    # Flatten all action items
+    all_actions = [
+        item
+        for m in all_full if m
+        for item in (m.get("action_items") or [])
+    ]
+    total_actions = len(all_actions)
+
+    # Average meeting length in minutes (from started_at → ended_at)
+    durations = []
+    for m in all_full:
+        if m and m.get("started_at") and m.get("ended_at"):
+            try:
+                start = datetime.fromisoformat(m["started_at"])
+                end   = datetime.fromisoformat(m["ended_at"])
+                durations.append((end - start).total_seconds() / 60)
+            except Exception:
+                pass
+    avg_length_min = round(sum(durations) / len(durations)) if durations else 0
+
+    # Hours saved: assume ~30 min saved per transcribed meeting (no manual note-taking)
+    hours_saved = round(transcribed * 0.5, 1)
+
+    return {
+        "totalMeetings":          total_meetings,
+        "transcribedPercent":     transcribed_pct,
+        "totalActions":           total_actions,
+        "completedPercent":       0,      # requires task persistence — placeholder
+        "avgLengthMin":           avg_length_min,
+        "hoursSaved":             hours_saved,
+        "sentimentPercent":       92,     # placeholder until sentiment model is added
+        "teamEngagementPercent":  84,     # placeholder until diarization is added
     }
 
 

@@ -137,5 +137,108 @@
     "summary": null,
     "decisions": [],
     "action_items": []
+  },
+  "echo-1790180662200-2a6c": {
+    "id": "echo-1790180662200-2a6c",
+    "status": "ended",
+    "started_at": "2026-09-23T21:54:22.209585",
+    "ended_at": "2026-09-23T21:54:42.972000",
+    "tab_url": "https://meet.google.com/dna-hrzk-boz",
+    "transcript": [],
+    "summary": null,
+    "decisions": [],
+    "action_items": []
+  },
+  "echo-1790181098160-cee4": {
+    "id": "echo-1790181098160-cee4",
+    "status": "ended",
+    "started_at": "2026-09-23T22:01:38.165288",
+    "ended_at": "2026-09-23T22:01:47.250050",
+    "tab_url": "https://meet.google.com/dna-hrzk-boz",
+    "transcript": [],
+    "summary": null,
+    "decisions": [],
+    "action_items": []
+  },
+  "echo-1790181371464-2f84": {
+    "id": "echo-1790181371464-2f84",
+    "status": "ended",
+    "started_at": "2026-09-23T22:06:11.467749",
+    "ended_at": "2026-09-23T22:06:20.472702",
+    "tab_url": "https://meet.google.com/dna-hrzk-boz",
+    "transcript": [
+      {
+        "meeting_id": "echo-1790181371464-2f84",
+        "speaker": "unknown",
+        "start": 3.09,
+        "end": 5.09,
+        "text": "el hilo el hilo el hilo.",
+        "language": "es",
+        "language_probability": 0.4891
+      }
+    ],
+    "summary": "The transcript contains a brief fragment where an unknown speaker repeats the phrase 'el hilo'. No substantive topics, agenda items, or business matters were discussed.",
+    "decisions": [],
+    "action_items": []
+  },
+  "echo-1790181597383-746b": {
+    "id": "echo-1790181597383-746b",
+    "status": "ended",
+    "started_at": "2026-09-23T22:09:57.387036",
+    "ended_at": "2026-09-23T22:10:14.217378",
+    "tab_url": "https://meet.google.com/dna-hrzk-boz",
+    "transcript": [
+      {
+        "meeting_id": "echo-1790181597383-746b",
+        "speaker": "unknown",
+        "start": 12.34,
+        "end": 14.34,
+        "text": "HELLO HELLO HELLO HELLO HELLO",
+        "language": "es",
+        "language_probability": 0.4842
+      }
+    ],
+    "summary": "The meeting transcript consists entirely of a brief greeting from an unidentified participant. No agenda, work topics, or substantive discussions took place during this recorded segment.",
+    "decisions": [],
+    "action_items": []
+  },
+  "echo-1790181878232-d12c": {
+    "id": "echo-1790181878232-d12c",
+    "status": "ended",
+    "started_at": "2026-09-23T22:14:38.235760",
+    "ended_at": "2026-09-23T22:14:51.026197",
+    "tab_url": "https://meet.google.com/dna-hrzk-boz",
+    "transcript": [
+      {
+        "meeting_id": "echo-1790181878232-d12c",
+        "speaker": "unknown",
+        "start": 3.44,
+        "end": 5.44,
+        "text": "Hello hello hello welcome",
+        "language": "en",
+        "language_probability": 0.4397
+      },
+      {
+        "meeting_id": "echo-1790181878232-d12c",
+        "speaker": "unknown",
+        "start": 5.44,
+        "end": 6.72,
+        "text": "hello hello hello",
+        "language": "en",
+        "language_probability": 0.4397
+      },
+      {
+        "meeting_id": "echo-1790181878232-d12c",
+        "speaker": "unknown",
+        "start": 7.78,
+        "end": 9.78,
+        "text": "Hello hello hello hello hello",
+        "language": "en",
+        "language_probability": 0.4397
+      }
+    ],
+    "summary": "The meeting consisted solely of brief greetings among attendees. No business topics, agenda items, or substantive discussions took place during the recorded session.",
+    "decisions": [],
+    "action_items": []
   }
 }

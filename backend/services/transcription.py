@@ -56,7 +56,7 @@ class TranscriptionService:
         segments_iter, info = self.model.transcribe(
             audio_path,
             beam_size=5,
-            language=None,          # auto-detect
+            language="en",          # Force English to prevent Spanish hallucinations on short audio
             task="transcribe",
             vad_filter=True         # IMPORTANT: strips silence to prevent AI hallucinations
         )

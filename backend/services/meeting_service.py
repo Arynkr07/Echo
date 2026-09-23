@@ -102,10 +102,12 @@ def list_meetings() -> list:
     _meetings = _load_db()
     return [
         {
-            "id":         m["id"],
-            "status":     m["status"],
-            "started_at": m["started_at"],
-            "ended_at":   m["ended_at"],
+            "id":             m["id"],
+            "status":         m["status"],
+            "started_at":     m["started_at"],
+            "ended_at":       m["ended_at"],
+            "has_transcript": len(m.get("transcript", [])) > 0,
+            "has_summary":    bool(m.get("summary") and m["summary"] != "Analysis failed — see server logs."),
         }
         for m in _meetings.values()
     ]

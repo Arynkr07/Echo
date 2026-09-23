@@ -1,59 +1,64 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
-import { api, TranscriptItem, TaskItem, DashboardMetrics } from "@/lib/api";
+import { api, TranscriptItem, TaskItem, DashboardMetrics, MeetingSummary } from "@/lib/api";
 
 export default function EchoDashboard() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState("summary");
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  const [transcriptList, setTranscriptList] = useState<TranscriptItem[]>([
-    { speaker: "Rahul", time: "10:32 AM", text: "Let us lock down the core deliverables for the upcoming milestone." },
-    { speaker: "Aryan", time: "10:34 AM", text: "Backend API endpoints and the Whisper ingestion stream will be operational by Oct 5." },
-    { speaker: "Rahul", time: "10:36 AM", text: "Understood. I will align presentation assets and slide reviews for Oct 8." },
-    { speaker: "Aryan", time: "10:38 AM", text: "Then we run full integration validation on Oct 15 before handoff." },
-  ]);
+  const [activeMeetingId, setActiveMeetingId] = useState<string | null>(null);
+  const [transcriptList, setTranscriptList] = useState<TranscriptItem[]>([]);
+  const [intelligence, setIntelligence] = useState<MeetingSummary | null>(null);
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
 
-  const [tasks, setTasks] = useState<TaskItem[]>([
-    { id: 1, title: "Finalize Whisper STT chunk pipeline", owner: "Aryan", due: "Oct 5", done: true },
-    { id: 2, title: "Prepare architecture presentation deck", owner: "Rahul", due: "Oct 8", done: false },
-    { id: 3, title: "Scope dark mode tokens & accessibility audit", owner: "Adzkiya", due: "Today", done: false },
-    { id: 4, title: "Release candidate verification for MVP launch", owner: "Core Team", due: "Oct 15", done: false },
-  ]);
+  const loadMeetingData = useCallback(async (meetingId: string) => {
+    const [transcript, summary] = await Promise.all([
+      api.getLiveTranscript(meetingId),
+      api.getMeetingIntelligence(meetingId),
+    ]);
+    if (transcript && transcript.length > 0) setTranscriptList(transcript);
+    if (summary) {
+      setIntelligence(summary);
+      if (summary.actions && summary.actions.length > 0) setTasks(summary.actions);
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (!currentUser) {
-        router.push("/login");
-      } else {
-        setUser(currentUser);
+      if (!currentUser) router.push("/login");
+      else setUser(currentUser);
+    });
+
+    // Load metrics and latest meeting on mount
+    api.getDashboardMetrics().then(setMetrics);
+    api.getLatestMeeting().then((meeting) => {
+      if (meeting) {
+        setActiveMeetingId(meeting.id);
+        loadMeetingData(meeting.id);
       }
     });
 
-    api.getDashboardMetrics().then(setMetrics);
-    api.getLiveTranscript().then((data) => {
-      if (data && data.length > 0) setTranscriptList(data);
-    });
-    api.getMeetingIntelligence().then((data) => {
-      if (data && data.actions) setTasks(data.actions);
-    });
-
+    // Poll transcript every 5 seconds (refreshes when a new recording finishes)
     const interval = setInterval(() => {
-      api.getLiveTranscript().then((data) => {
-        if (data && data.length > 0) setTranscriptList(data);
+      api.getLatestMeeting().then((meeting) => {
+        if (meeting && meeting.id !== activeMeetingId) {
+          setActiveMeetingId(meeting.id);
+        }
+        if (meeting) loadMeetingData(meeting.id);
       });
-    }, 4000);
+    }, 5000);
 
     return () => {
       unsubscribe();
       clearInterval(interval);
     };
-  }, [router]);
+  }, [router, loadMeetingData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSignOut = async () => {
     await signOut(auth);
@@ -61,10 +66,7 @@ export default function EchoDashboard() {
   };
 
   const toggleTask = (id: number) => {
-    const updated = tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
-    setTasks(updated);
-    const item = updated.find((t) => t.id === id);
-    if (item) api.toggleTaskStatus(id, item.done);
+    setTasks((prev) => api.toggleTaskStatus(prev, id));
   };
 
   return (
@@ -108,7 +110,10 @@ export default function EchoDashboard() {
               Good morning, {user?.displayName || user?.email?.split("@")[0] || "Member"} 👋
             </h1>
             <p className="text-xs text-[#6e8a7d] mt-0.5">
-              Active Meeting Session: <strong className="text-[#1e6144]">Weekly Sync #4</strong> (Tab Audio Stream Live)
+              {activeMeetingId
+                ? <>Active Meeting: <strong className="text-[#1e6144] font-mono">{activeMeetingId}</strong></>
+                : <span className="text-[#9ab5a8]">No meetings recorded yet — start the extension to begin</span>
+              }
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -359,33 +364,43 @@ export default function EchoDashboard() {
             <div className="flex-1 text-xs leading-relaxed text-[#385345]">
               {activeTab === "summary" && (
                 <p className="bg-[#f9fbf9] p-4 rounded-2xl border border-[#edf2ef]">
-                  The core roadmap milestones are confirmed. Priority is placed on concluding the WebSocket ingestion bridge and the local Faster-Whisper pipeline by October 5, paving the way for full UI integration on October 15.
+                  {intelligence?.summary || (
+                    <span className="text-[#9ab5a8]">
+                      {activeMeetingId
+                        ? "AI summary is being generated — check back shortly after recording ends."
+                        : "Record a meeting to see your AI-generated summary here."}
+                    </span>
+                  )}
                 </p>
               )}
 
               {activeTab === "decisions" && (
                 <ul className="space-y-2.5 bg-[#f9fbf9] p-4 rounded-2xl border border-[#edf2ef]">
-                  <li className="flex items-start gap-2">
-                    <span className="text-[#1e6144] font-bold">•</span>
-                    <span>MVP target release scheduled for October 15.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[#1e6144] font-bold">•</span>
-                    <span>All audio processing executes locally with zero external stream leaks.</span>
-                  </li>
+                  {intelligence?.decisions && intelligence.decisions.length > 0
+                    ? intelligence.decisions.map((d, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="text-[#1e6144] font-bold">•</span>
+                          <span>{d}</span>
+                        </li>
+                      ))
+                    : <li className="text-[#9ab5a8]">No decisions recorded yet for this meeting.</li>
+                  }
                 </ul>
               )}
 
               {activeTab === "actions" && (
                 <div className="space-y-2 bg-[#f9fbf9] p-3 rounded-2xl border border-[#edf2ef]">
-                  {tasks.slice(0, 3).map((t) => (
-                    <div key={t.id} className="flex justify-between items-center p-2 bg-white rounded-xl border border-[#e2eae5]">
-                      <span className="font-medium text-[#163a2b]">{t.title}</span>
-                      <span className="text-[10px] text-[#1e6144] font-bold bg-[#e8f3ed] px-2 py-0.5 rounded">
-                        {t.owner} • {t.due}
-                      </span>
-                    </div>
-                  ))}
+                  {tasks.length > 0
+                    ? tasks.slice(0, 3).map((t) => (
+                        <div key={t.id} className="flex justify-between items-center p-2 bg-white rounded-xl border border-[#e2eae5]">
+                          <span className="font-medium text-[#163a2b]">{t.title}</span>
+                          <span className="text-[10px] text-[#1e6144] font-bold bg-[#e8f3ed] px-2 py-0.5 rounded">
+                            {t.owner} • {t.due}
+                          </span>
+                        </div>
+                      ))
+                    : <p className="text-[#9ab5a8] p-2">No action items extracted yet.</p>
+                  }
                 </div>
               )}
             </div>
