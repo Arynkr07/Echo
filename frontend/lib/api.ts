@@ -39,7 +39,7 @@ export interface Meeting {
 }
 
 export const api = {
-  /** Get the best meeting to display: most recent one with a summary, else most recent with a transcript, else most recent overall. */
+  /** Get the most recently recorded meeting ID from the backend. */
   async getLatestMeeting(): Promise<Meeting | null> {
     try {
       const res = await fetch(`${BACKEND_URL}/api/meeting`, { cache: "no-store" });
@@ -47,15 +47,10 @@ export const api = {
       const meetings: Meeting[] = await res.json();
       if (!meetings.length) return null;
 
-      // Sort all meetings newest-first
-      const sorted = meetings.sort(
+      // Sort descending by started_at and return the newest meeting
+      return meetings.sort(
         (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
-      );
-
-      // Prefer: has summary > has transcript > just most recent
-      const withSummary    = sorted.find((m) => (m as any).has_summary);
-      const withTranscript = sorted.find((m) => (m as any).has_transcript);
-      return withSummary ?? withTranscript ?? sorted[0];
+      )[0];
     } catch {
       return null;
     }

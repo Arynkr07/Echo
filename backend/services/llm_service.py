@@ -78,7 +78,8 @@ def _mock_analysis() -> dict:
         "action_items": [
             {"task": "[MOCK] Complete backend API", "owner": "Aryan",  "deadline": "Oct 5"},
             {"task": "[MOCK] Prepare presentation",  "owner": "Rahul",  "deadline": "Oct 8"}
-        ]
+        ],
+        "sentiment_score": 85
     }
 
 
@@ -113,8 +114,12 @@ Return ONLY a valid JSON object with exactly these keys:
   "action_items": [
     {{"task": "what needs to be done", "owner": "person responsible", "deadline": "deadline if mentioned, else null"}},
     ...
-  ]
+  ],
+  "sentiment_score": 85
 }}
+
+Rules:
+- sentiment_score must be an integer from 0 to 100 based on the mood of the transcript (e.g. 90+ is very positive/productive, 50 is neutral, <40 is tense)
 
 Rules:
 - Be concise and factual
@@ -135,7 +140,8 @@ Rules:
         return {
             "summary":      "Analysis failed — see server logs.",
             "decisions":    [],
-            "action_items": []
+            "action_items": [],
+            "sentiment_score": 50
         }
 
 

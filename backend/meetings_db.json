@@ -237,8 +237,189 @@
         "language_probability": 0.4397
       }
     ],
-    "summary": "The meeting consisted solely of brief greetings among attendees. No business topics, agenda items, or substantive discussions took place during the recorded session.",
+    "summary": "The meeting transcript consists entirely of brief introductory greetings among participants. No substantive topics, agenda items, or work-related discussions took place during the recording.",
     "decisions": [],
     "action_items": []
+  },
+  "echo-1790182987736-a6ed": {
+    "id": "echo-1790182987736-a6ed",
+    "status": "ended",
+    "started_at": "2026-09-23T22:33:07.740829",
+    "ended_at": "2026-09-23T22:33:22.146439",
+    "tab_url": "https://meet.google.com/dna-hrzk-boz",
+    "transcript": [],
+    "summary": null,
+    "decisions": [],
+    "action_items": []
+  },
+  "echo-1790184824416-a52b": {
+    "id": "echo-1790184824416-a52b",
+    "status": "ended",
+    "started_at": "2026-09-23T23:03:44.426635",
+    "ended_at": "2026-09-23T23:03:59.730768",
+    "tab_url": "https://meet.google.com/dna-hrzk-boz",
+    "transcript": [
+      {
+        "meeting_id": "echo-1790184824416-a52b",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 12.42,
+        "text": "2303",
+        "language": "en",
+        "language_probability": 1.0
+      },
+      {
+        "meeting_id": "echo-1790184824416-a52b",
+        "speaker": "unknown",
+        "start": 12.42,
+        "end": 13.46,
+        "text": "Hello, hello, hello",
+        "language": "en",
+        "language_probability": 1.0
+      },
+      {
+        "meeting_id": "echo-1790184824416-a52b",
+        "speaker": "unknown",
+        "start": 13.46,
+        "end": 15.06,
+        "text": "2303",
+        "language": "en",
+        "language_probability": 1.0
+      }
+    ],
+    "summary": "Analysis failed \u2014 see server logs.",
+    "decisions": [],
+    "action_items": [],
+    "sentiment_score": 50
+  },
+  "echo-1790185174152-0a67": {
+    "id": "echo-1790185174152-0a67",
+    "status": "ended",
+    "started_at": "2026-09-23T23:09:34.156264",
+    "ended_at": "2026-09-23T23:09:44.787348",
+    "tab_url": "https://meet.google.com/dna-hrzk-boz",
+    "transcript": [
+      {
+        "meeting_id": "echo-1790185174152-0a67",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 10,
+        "text": "Hello, hello, Akshachki, Ash Cheeks. Hello, hello, Akshachki, Ash Cheeks.",
+        "language": "en",
+        "language_probability": 1.0
+      }
+    ],
+    "summary": "Analysis failed \u2014 see server logs.",
+    "decisions": [],
+    "action_items": [],
+    "sentiment_score": 50
+  },
+  "echo-1790185424515-447c": {
+    "id": "echo-1790185424515-447c",
+    "status": "ended",
+    "started_at": "2026-09-23T23:13:44.519088",
+    "ended_at": "2026-09-23T23:13:54.846875",
+    "tab_url": "https://meet.google.com/dna-hrzk-boz",
+    "transcript": [
+      {
+        "meeting_id": "echo-1790185424515-447c",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 5.28,
+        "text": "Hello, hello, hello, hello.",
+        "language": "en",
+        "language_probability": 1.0
+      },
+      {
+        "meeting_id": "echo-1790185424515-447c",
+        "speaker": "unknown",
+        "start": 5.38,
+        "end": 10.02,
+        "text": "Echo 179018 AI Meeting Assistant.",
+        "language": "en",
+        "language_probability": 1.0
+      }
+    ],
+    "summary": "Analysis failed \u2014 see server logs.",
+    "decisions": [],
+    "action_items": [],
+    "sentiment_score": 50
+  },
+  "echo-1790185615237-3dd1": {
+    "id": "echo-1790185615237-3dd1",
+    "status": "ended",
+    "started_at": "2026-09-23T23:16:55.257474",
+    "ended_at": "2026-09-23T23:17:05.684596",
+    "tab_url": "https://meet.google.com/dna-hrzk-boz",
+    "transcript": [
+      {
+        "meeting_id": "echo-1790185615237-3dd1",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 10.02,
+        "text": "foreign",
+        "language": "en",
+        "language_probability": 1.0
+      }
+    ],
+    "summary": "Analysis failed \u2014 see server logs.",
+    "decisions": [],
+    "action_items": [],
+    "sentiment_score": 50
+  },
+  "echo-1790185639301-3fe4": {
+    "id": "echo-1790185639301-3fe4",
+    "status": "ended",
+    "started_at": "2026-09-23T23:17:19.313478",
+    "ended_at": "2026-09-23T23:17:29.756155",
+    "tab_url": "https://meet.google.com/dna-hrzk-boz",
+    "transcript": [],
+    "summary": null,
+    "decisions": [],
+    "action_items": []
+  },
+  "echo-1790185670280-5aec": {
+    "id": "echo-1790185670280-5aec",
+    "status": "ended",
+    "started_at": "2026-09-23T23:17:50.281177",
+    "ended_at": "2026-09-23T23:17:56.035432",
+    "tab_url": "https://meet.google.com/dna-hrzk-boz",
+    "transcript": [],
+    "summary": null,
+    "decisions": [],
+    "action_items": []
+  },
+  "echo-1790185773608-0b4f": {
+    "id": "echo-1790185773608-0b4f",
+    "status": "ended",
+    "started_at": "2026-09-23T23:19:33.609027",
+    "ended_at": "2026-09-23T23:19:42.674908",
+    "tab_url": "https://meet.google.com/dna-hrzk-boz",
+    "transcript": [],
+    "summary": null,
+    "decisions": [],
+    "action_items": []
+  },
+  "echo-1790185841616-480c": {
+    "id": "echo-1790185841616-480c",
+    "status": "ended",
+    "started_at": "2026-09-23T23:20:41.621192",
+    "ended_at": "2026-09-23T23:20:48.283452",
+    "tab_url": "https://meet.google.com/dna-hrzk-boz",
+    "transcript": [
+      {
+        "meeting_id": "echo-1790185841616-480c",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 4.98,
+        "text": "Hello, hello, hello, 12798.",
+        "language": "en",
+        "language_probability": 1.0
+      }
+    ],
+    "summary": "The meeting transcript consists solely of an unknown participant offering a greeting and stating a number, likely an audio check or an identification. No substantive discussion or agenda items were covered.",
+    "decisions": [],
+    "action_items": [],
+    "sentiment_score": 55
   }
 }

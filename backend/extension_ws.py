@@ -211,7 +211,8 @@ async def _transcribe_and_analyse(session: Session):
                 meeting_id,
                 ai_result["summary"],
                 ai_result["decisions"],
-                ai_result["action_items"]
+                ai_result["action_items"],
+                ai_result.get("sentiment_score", 50)
             )
 
             await session.send({

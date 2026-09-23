@@ -163,7 +163,8 @@ async def get_summary(meeting_id: str):
         meeting_id,
         result["summary"],
         result["decisions"],
-        result["action_items"]
+        result["action_items"],
+        result.get("sentiment_score", 50)
     )
 
     return {
@@ -220,6 +221,10 @@ async def get_metrics():
     # Hours saved: assume ~30 min saved per transcribed meeting (no manual note-taking)
     hours_saved = round(transcribed * 0.5, 1)
 
+    # Average Sentiment Score
+    sentiments = [m.get("sentiment_score") for m in all_full if m and m.get("sentiment_score") is not None]
+    avg_sentiment = round(sum(sentiments) / len(sentiments)) if sentiments else 50
+
     return {
         "totalMeetings":          total_meetings,
         "transcribedPercent":     transcribed_pct,
@@ -227,7 +232,7 @@ async def get_metrics():
         "completedPercent":       0,      # requires task persistence — placeholder
         "avgLengthMin":           avg_length_min,
         "hoursSaved":             hours_saved,
-        "sentimentPercent":       92,     # placeholder until sentiment model is added
+        "sentimentPercent":       avg_sentiment,
         "teamEngagementPercent":  84,     # placeholder until diarization is added
     }
 
@@ -243,7 +248,8 @@ def _run_ai_analysis(meeting_id: str, transcript: list):
             meeting_id,
             result["summary"],
             result["decisions"],
-            result["action_items"]
+            result["action_items"],
+            result.get("sentiment_score", 50)
         )
         print(f"[Meeting] AI analysis done for {meeting_id}")
     except Exception as e:

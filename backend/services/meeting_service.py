@@ -155,13 +155,14 @@ def get_transcript(meeting_id: str) -> list | None:
 # AI Results
 # ─────────────────────────────────────────────────────────────────────────────
 
-def save_ai_results(meeting_id: str, summary: str, decisions: list, action_items: list) -> bool:
+def save_ai_results(meeting_id: str, summary: str, decisions: list, action_items: list, sentiment_score: int = 50) -> bool:
     _meetings = _load_db()
     meeting = _meetings.get(meeting_id)
     if not meeting:
         return False
-    meeting["summary"]      = summary
-    meeting["decisions"]    = decisions
-    meeting["action_items"] = action_items
+    meeting["summary"]         = summary
+    meeting["decisions"]       = decisions
+    meeting["action_items"]    = action_items
+    meeting["sentiment_score"] = sentiment_score
     _save_db(_meetings)
     return True

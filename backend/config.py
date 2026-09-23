@@ -16,4 +16,4 @@ WHISPER_COMPUTE    = "int8"
 
 # ─── Gemini ───────────────────────────────────────────────────────────────────
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL   = "gemini-3.6-flash"   # current model
+GEMINI_MODEL   = "gemini-2.5-flash"   # Fast, highly accurate Google model

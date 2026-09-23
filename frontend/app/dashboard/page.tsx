@@ -22,10 +22,10 @@ export default function EchoDashboard() {
       api.getLiveTranscript(meetingId),
       api.getMeetingIntelligence(meetingId),
     ]);
-    if (transcript && transcript.length > 0) setTranscriptList(transcript);
-    if (summary) {
-      setIntelligence(summary);
-      if (summary.actions && summary.actions.length > 0) setTasks(summary.actions);
+    setTranscriptList(transcript || []);
+    setIntelligence(summary || null);
+    if (summary && summary.actions) {
+      setTasks(summary.actions);
     }
   }, []);
 
@@ -44,15 +44,16 @@ export default function EchoDashboard() {
       }
     });
 
-    // Poll transcript every 5 seconds (refreshes when a new recording finishes)
+    // Poll transcript and metrics every 4 seconds
     const interval = setInterval(() => {
+      api.getDashboardMetrics().then(setMetrics);
       api.getLatestMeeting().then((meeting) => {
-        if (meeting && meeting.id !== activeMeetingId) {
+        if (meeting) {
           setActiveMeetingId(meeting.id);
+          loadMeetingData(meeting.id);
         }
-        if (meeting) loadMeetingData(meeting.id);
       });
-    }, 5000);
+    }, 4000);
 
     return () => {
       unsubscribe();
@@ -480,8 +481,15 @@ export default function EchoDashboard() {
                 <span>✨</span>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold text-[#153e2d]">{metrics?.sentimentPercent ?? 92}%</span>
-                <span className="text-[10px] bg-[#e7f5ed] text-[#1e6144] px-1.5 py-0.5 rounded font-semibold">Positive</span>
+                <span className="text-xl font-bold text-[#153e2d]">{metrics?.sentimentPercent ?? 50}%</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
+                  (metrics?.sentimentPercent ?? 50) >= 75 ? 'bg-[#e7f5ed] text-[#1e6144]' :
+                  (metrics?.sentimentPercent ?? 50) >= 50 ? 'bg-[#fef3c7] text-[#92400e]' :
+                  'bg-[#fee2e2] text-[#991b1b]'
+                }`}>
+                  {(metrics?.sentimentPercent ?? 50) >= 75 ? 'Positive' :
+                   (metrics?.sentimentPercent ?? 50) >= 50 ? 'Neutral' : 'Tense'}
+                </span>
               </div>
               <p className="text-[10px] text-[#718b7f] mb-2">Based on current agenda</p>
               <div className="w-full bg-[#edf2ef] rounded-full h-1.5">
