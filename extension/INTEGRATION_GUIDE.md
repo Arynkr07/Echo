@@ -1,32 +1,64 @@
-# Echo Extension — Integration Guide for Backend & Frontend
+# Echo — Integration & Architecture Guide
 
-> **For Person 2 (Backend) and Person 3 (Frontend)**  
-> This document explains exactly what the extension sends and expects, so you can wire up your code correctly.
-
----
-
-## 1. WebSocket Connection
-
-The extension connects to:
-
-```
-ws://localhost:3001
-```
-
-Your backend **must run a WebSocket server on port 3001**.
-
-> If you want to change the port, tell Person 1. The URL is in one place:  
-> `extension/background/background.js` → `const BACKEND_WS_URL = 'ws://localhost:3001'`
+> **Architecture Documentation for Frontend, Backend & Extension**  
+> Complete reference for endpoints, WebSocket communication, AI pipelines, and setup.
 
 ---
 
-## 2. Messages the Extension SENDS to the Backend
+## 1. System Overview
 
-All messages are **JSON strings** sent over WebSocket.
+Echo runs as three synchronized services:
 
-### 2.1 `meeting_start`
-Sent when the user clicks "Start Recording".
+```
+┌──────────────────────────┐          WebSocket (Port 3001)         ┌──────────────────────────┐
+│  Chrome Extension (MV3)  │  ───────────────────────────────────►  │  extension_ws.py (WS)   │
+│  - Tab Audio Capture     │                                        │  - Groq Whisper STT      │
+│  - Floating UI Overlay   │  ◄───────────────────────────────────  │  - Gemini Intelligence  │
+└──────────────────────────┘        Live Subtitles / Status         └────────────┬─────────────┘
+                                                                                 │
+                                                                                 │ File DB
+                                                                                 ▼
+┌──────────────────────────┐           REST API (Port 8000)         ┌──────────────────────────┐
+│  Next.js 16 Dashboard    │  ───────────────────────────────────►  │  FastAPI (main.py)      │
+│  - Live Transcripts      │  ◄───────────────────────────────────  │  - Meeting Analytics     │
+│  - Summaries & Tasks     │         JSON / Metrics / Q&A           │  - Question Answering    │
+└──────────────────────────┘                                        └──────────────────────────┘
+```
 
+---
+
+## 2. Environment Variables
+
+### Backend (`backend/.env`)
+```bash
+# Google AI Studio API Key (Get at https://aistudio.google.com)
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# Groq Cloud API Key for ultra-fast Whisper Large-v3 STT (Get at https://console.groq.com)
+GROQ_API_KEY=your_groq_api_key_here
+```
+
+### Frontend (`frontend/.env.local`)
+```bash
+NEXT_PUBLIC_FIREBASE_API_KEY="your_firebase_key"
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="your_app.firebaseapp.com"
+NEXT_PUBLIC_FIREBASE_PROJECT_ID="your_project_id"
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="your_app.firebasestorage.app"
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="your_sender_id"
+NEXT_PUBLIC_FIREBASE_APP_ID="your_app_id"
+NEXT_PUBLIC_BACKEND_URL="http://localhost:8000"
+```
+
+---
+
+## 3. WebSocket Protocol (`ws://localhost:3001`)
+
+The Chrome Extension communicates with `extension_ws.py` over WebSocket on port 3001.
+
+### 3.1 Messages Sent by Extension ➔ Backend
+
+#### `meeting_start`
+Fires when user starts recording on Google Meet:
 ```json
 {
   "type": "meeting_start",
@@ -35,63 +67,31 @@ Sent when the user clicks "Start Recording".
 }
 ```
 
-**What backend should do:**
-- Create a new meeting record in the database
-- Store `meetingId` — all future messages from this session use this ID
-- Respond with a `status` message (optional but nice)
-
----
-
-### 2.2 `audio_chunk`
-Sent every **5 seconds** while recording.
-
+#### `audio_chunk`
+Sent every 5 seconds with chunked audio:
 ```json
 {
   "type": "audio_chunk",
   "meetingId": "echo-1727123456789-a3f2",
-  "timestamp": "2024-09-21T16:45:23.000Z",
-  "audio": "<base64-encoded audio data>",
+  "timestamp": "2026-09-23T22:00:00.000Z",
+  "audio": "<base64-encoded webm audio>",
   "mimeType": "audio/webm;codecs=opus"
 }
 ```
 
-**What backend should do:**
-1. Decode `audio` from base64 → binary buffer
-2. Write to a temp file (e.g. `chunk_<timestamp>.webm`)
-3. Send to Whisper for transcription
-4. Save transcript to database
-5. Send `transcript_update` back to extension (optional, for overlay)
-
-**How to decode in Node.js:**
-```js
-const audioBuffer = Buffer.from(message.audio, 'base64');
-// write to file or pipe directly to whisper
-```
-
----
-
-### 2.3 `speaker_update`
-Sent whenever the active speaker on Google Meet changes.
-
+#### `speaker_update`
+Sent when the DOM observer detects active speaker change:
 ```json
 {
   "type": "speaker_update",
   "meetingId": "echo-1727123456789-a3f2",
   "speaker": "Aryan Kumar",
-  "timestamp": "2024-09-21T16:45:19.000Z"
+  "timestamp": "2026-09-23T22:00:05.000Z"
 }
 ```
 
-**What backend should do:**
-- Store the current speaker
-- Tag the next transcript chunk with this speaker name
-- This is how you know WHO said what
-
----
-
-### 2.4 `meeting_end`
-Sent when the user clicks "Stop Recording".
-
+#### `meeting_end`
+Fires when user stops recording:
 ```json
 {
   "type": "meeting_end",
@@ -99,218 +99,148 @@ Sent when the user clicks "Stop Recording".
 }
 ```
 
-**What backend should do:**
-- Mark meeting as ended in database
-- Trigger final LLM analysis (summary, decisions, action items)
-- Clean up temp audio files
+### 3.2 Messages Sent by Backend ➔ Extension
 
----
+#### `status`
+Updates extension pill status:
+```json
+{ "type": "status", "message": "Transcribing with Groq Whisper..." }
+```
 
-## 3. Messages the Extension EXPECTS from the Backend
-
-The extension listens for these messages from the backend. They are **optional** — the extension works without them, but they power the live overlay on Google Meet.
-
-### 3.1 `transcript_update`
-Show a new transcript line in the Meet overlay.
-
+#### `transcript_update`
+Sends transcribed segments back to the extension floating overlay:
 ```json
 {
   "type": "transcript_update",
   "meetingId": "echo-1727123456789-a3f2",
-  "speaker": "Aryan Kumar",
-  "text": "Let's set the deadline for October 15.",
-  "timestamp": "00:34:21"
+  "speaker": "Aryan",
+  "text": "Let us finalize the backend by tomorrow.",
+  "timestamp": "00:04",
+  "language": "en"
 }
 ```
 
-### 3.2 `status`
-Show a status message in the Meet overlay.
+---
 
+## 4. REST API Endpoints (`http://localhost:8000`)
+
+### `GET /api/meeting`
+Returns lightweight list of all recorded meetings (sorted newest first):
+```json
+[
+  {
+    "id": "echo-1790184824416-a52b",
+    "status": "ended",
+    "started_at": "2026-09-23T23:03:44.426635",
+    "ended_at": "2026-09-23T23:03:59.730768",
+    "has_transcript": true,
+    "has_summary": true
+  }
+]
+```
+
+### `GET /api/meeting/{meeting_id}/transcript`
+Returns full transcript segments with formatted relative time:
 ```json
 {
-  "type": "status",
-  "message": "Transcribing..."
+  "meeting_id": "echo-1790184824416-a52b",
+  "detected_language": "en",
+  "segment_count": 3,
+  "segments": [
+    {
+      "speaker": "Aryan",
+      "time": "00:03",
+      "text": "2303 hello hello",
+      "start": 3.0,
+      "end": 5.2,
+      "language": "en"
+    }
+  ]
+}
+```
+
+### `GET /api/meeting/{meeting_id}/summary`
+Returns AI summary, key decisions, and action items:
+```json
+{
+  "meeting_id": "echo-1790184824416-a52b",
+  "summary": "The team aligned on finishing the backend deliverables by tomorrow.",
+  "decisions": ["Backend freeze set for Oct 5"],
+  "actions": [
+    {
+      "id": 1,
+      "title": "Finish the backend API",
+      "owner": "Aryan",
+      "due": "tomorrow",
+      "done": false
+    }
+  ]
+}
+```
+
+### `GET /api/metrics`
+Computes live aggregate metrics for the dashboard:
+```json
+{
+  "totalMeetings": 14,
+  "transcribedPercent": 85,
+  "totalActions": 4,
+  "completedPercent": 0,
+  "avgLengthMin": 2,
+  "hoursSaved": 3.5,
+  "sentimentPercent": 80,
+  "teamEngagementPercent": 84
+}
+```
+
+### `POST /api/meeting/{meeting_id}/question`
+Ask questions about a meeting:
+```json
+// Request
+{ "question": "What is the deadline for the backend?" }
+
+// Response
+{
+  "answer": "The deadline for the backend is tomorrow as agreed by Aryan.",
+  "source": { "speaker": "Aryan", "timestamp": "00:03" }
 }
 ```
 
 ---
 
-## 4. Minimal Backend WebSocket Server (Node.js starter)
+## 5. Setup & Running Instructions
 
-Here's the minimum code to connect and receive messages from the extension:
+### 1. Backend Setup
+```powershell
+cd backend
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env
+# Fill in GEMINI_API_KEY and GROQ_API_KEY in .env
+```
 
-```js
-// backend/src/websocket/wsServer.js
+### 2. Run Servers
+**Terminal 1 (WebSocket Audio Ingestion):**
+```powershell
+venv\Scripts\python.exe extension_ws.py
+```
 
-const WebSocket = require('ws');
+**Terminal 2 (FastAPI REST Backend):**
+```powershell
+venv\Scripts\uvicorn.exe main:app --port 8000 --reload
+```
 
-const wss = new WebSocket.Server({ port: 3001 });
-
-wss.on('connection', (ws) => {
-  console.log('[WS] Extension connected');
-
-  ws.on('message', (raw) => {
-    const message = JSON.parse(raw);
-    console.log('[WS] Received:', message.type);
-
-    switch (message.type) {
-
-      case 'meeting_start':
-        // TODO: create meeting in DB
-        // meetingId = message.meetingId
-        console.log('Meeting started:', message.meetingId);
-        break;
-
-      case 'audio_chunk':
-        // TODO: decode base64, send to Whisper
-        const audio = Buffer.from(message.audio, 'base64');
-        console.log('Audio chunk:', audio.length, 'bytes for meeting', message.meetingId);
-        break;
-
-      case 'speaker_update':
-        // TODO: store current speaker
-        console.log('Speaker:', message.speaker, 'at', message.timestamp);
-        break;
-
-      case 'meeting_end':
-        // TODO: finalize meeting, run LLM
-        console.log('Meeting ended:', message.meetingId);
-        break;
-    }
-  });
-
-  ws.on('close', () => {
-    console.log('[WS] Extension disconnected');
-  });
-});
-
-console.log('[WS] WebSocket server running on ws://localhost:3001');
+**Terminal 3 (Next.js Dashboard):**
+```powershell
+cd frontend
+npm install
+npm run dev
 ```
 
 ---
 
-## 5. REST API — What the Extension Does NOT Use
+## 6. Advanced Roadmap
 
-The extension only uses WebSocket.
-
-Your REST APIs (`GET /meeting/:id`, `POST /meeting/:id/question`, etc.) are used by the **frontend only**.
-
----
-
-## 6. Meeting ID
-
-The extension generates the `meetingId`:
-
-```
-echo-<unix-timestamp-ms>-<4-hex-chars>
-Example: echo-1727123456789-a3f2
-```
-
-The backend receives this and should use it as the **primary key** for the meeting. Do not generate a new ID on the backend side — use what the extension sends.
-
----
-
-## 7. Audio Format
-
-| Property | Value |
-|---|---|
-| Format | WebM (Opus codec) — best for speech |
-| Chunk size | ~5 seconds per chunk |
-| Encoding | Base64 string in JSON |
-| MIME type | Included in each chunk message |
-
-Whisper accepts WebM/Opus natively. For `faster-whisper`, write the base64 to a `.webm` file and pass the path.
-
----
-
-## 8. CORS / Security Note
-
-During development, the WebSocket is open to any connection from the extension. For production, validate the `Origin` header.
-
----
-
-## 9. Testing Without the Extension
-
-You can test your WebSocket server using this simple HTML file (save locally and open in browser):
-
-```html
-<!-- test_ws.html -->
-<script>
-  const ws = new WebSocket('ws://localhost:3001');
-  ws.onopen = () => {
-    console.log('Connected!');
-    ws.send(JSON.stringify({
-      type: 'meeting_start',
-      meetingId: 'test-meeting-001',
-      tabUrl: 'https://meet.google.com/test'
-    }));
-    setTimeout(() => {
-      ws.send(JSON.stringify({
-        type: 'speaker_update',
-        meetingId: 'test-meeting-001',
-        speaker: 'Rahul',
-        timestamp: new Date().toISOString()
-      }));
-    }, 1000);
-  };
-  ws.onmessage = (e) => console.log('Backend says:', e.data);
-  ws.onerror   = (e) => console.error('Error:', e);
-</script>
-```
-
----
-
-## 10. Summary Checklist for Backend (Person 2)
-
-- [ ] Run WebSocket server on port `3001`
-- [ ] Handle `meeting_start` → create DB record with `meetingId`
-- [ ] Handle `audio_chunk` → decode base64 → Whisper → save transcript
-- [ ] Handle `speaker_update` → store current speaker, tag transcripts
-- [ ] Handle `meeting_end` → run LLM analysis
-- [ ] (Optional) Send `transcript_update` messages back to extension
-
-## Checklist for Frontend (Person 3)
-
-- [ ] Call `GET /meeting/:id` to load meeting data
-- [ ] Call `GET /meeting/:id/transcript` for transcript display
-- [ ] Call `GET /meeting/:id/summary` for AI notes
-- [ ] Call `POST /meeting/:id/question` for "Ask Your Meeting"
-- [ ] Poll or use SSE/WebSocket from backend for live updates
-- [ ] Display `meetingId` in the UI (user can see which meeting)
-
----
-
-## 11. Upcoming Features Roadmap (How to Implement)
-
-This section explains how we will build the 3 upcoming advanced features.
-
-### Feature 1: Speaker Diarization ("Who said what")
-**Goal:** Replace `speaker: "unknown"` with actual speaker detection so the AI summary knows exactly who agreed to which action item.
-**How to implement:**
-1. We added `pyannote.audio` to `requirements.txt`.
-2. In `backend/services/transcription.py`, import the pyannote pipeline:
-   `from pyannote.audio import Pipeline`
-3. Load the pipeline using a free HuggingFace token:
-   `pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.1", use_auth_token="YOUR_HF_TOKEN")`
-4. After converting WebM to WAV with FFmpeg, run the WAV through the pipeline:
-   `diarization = pipeline("audio.wav")`
-5. The pipeline returns a list of timeblocks mapped to `SPEAKER_00`, `SPEAKER_01`. Iterate through Whisper's `segments_iter` and match the timestamps to the Pyannote timeline to assign the correct speaker to each sentence.
-
-### Feature 2: Screenshot Capture (Multimodal Vision)
-**Goal:** Allow Gemini to see slides and code presented during the meeting.
-**How to implement:**
-1. **Frontend:** In `extension/background.js`, use `chrome.tabs.captureVisibleTab()` inside a `setInterval` that fires every 30-60 seconds while recording.
-2. Convert the image to base64 and send it over WebSocket with a new message type: `{"type": "screenshot", "image": "base64..."}`.
-3. **Backend:** In `extension_ws.py`, catch the `screenshot` event and save the base64 images into a new array in `meetings_db.json`.
-4. In `llm_service.py`, pass those images to Gemini along with the text. The Google GenAI SDK natively supports this:
-   `contents=["Analyze this meeting:", transcript_text, image1_bytes, image2_bytes]`
-
-### Feature 3: Whisper Model Upgrade (Better Accuracy)
-**Goal:** Fix instances where Whisper misunderstands accents or technical jargon.
-**How to implement:**
-1. Open `backend/services/transcription.py`.
-2. Change the initialization line from:
-   `self.model = WhisperModel("small", ...)`
-   to:
-   `self.model = WhisperModel("turbo", ...)`
-3. The `turbo` model provides near-flawless accuracy (comparable to `large-v3`) while remaining lightweight and extremely fast on CPU/GPU.
+1. **Speaker Diarization (`pyannote.audio`):** Replace `unknown` speaker with voice biometric clustering so individual voices are distinguished automatically.
+2. **Multimodal Vision (Screenshots):** Capture periodic tab screenshots (`chrome.tabs.captureVisibleTab`) and forward to Gemini Vision along with audio transcript for slide/code context.
