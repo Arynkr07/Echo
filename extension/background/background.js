@@ -21,10 +21,18 @@ let pendingChunks      = [];
 
 const BACKEND_WS_URL = 'ws://localhost:3001';
 
+let userId = "anonymous";
+
 // ── Message Router ────────────────────────────────────────────
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     switch (message.type) {
+
+        case 'SYNC_USER':
+            userId = message.userId;
+            console.log('[BG] Synced User ID:', userId);
+            sendResponse({ success: true });
+            return false;
 
         case 'START_CAPTURE':
             startCapture()
@@ -110,7 +118,7 @@ async function startCapture() {
 
     // ── Connect WebSocket ─────────────────────────────────────
     await connectWebSocket();
-    wsSend({ type: 'meeting_start', meetingId, tabUrl: tab.url });
+    wsSend({ type: 'meeting_start', meetingId, tabUrl: tab.url, userId });
 
     // ── Start audio capture ───────────────────────────────────
     const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id });

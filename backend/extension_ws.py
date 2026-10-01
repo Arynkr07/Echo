@@ -81,13 +81,14 @@ async def handle_connection(ws):
             if msg_type == "meeting_start":
                 meeting_id = msg.get("meetingId")
                 tab_url    = msg.get("tabUrl", "")
+                user_id    = msg.get("userId", "anonymous")
 
                 session.meeting_id = meeting_id
 
                 # Use the extension's meeting_id directly (don't generate a new one)
-                meeting_service.create_meeting_with_id(meeting_id, tab_url)
+                meeting_service.create_meeting_with_id(meeting_id, tab_url, user_id=user_id)
 
-                print(f"[Ext-WS] Meeting started: {meeting_id} | {tab_url}")
+                print(f"[Ext-WS] Meeting started: {meeting_id} for user: {user_id} | {tab_url}")
 
                 await session.send({
                     "type":    "status",

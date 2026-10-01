@@ -83,17 +83,8 @@ export default function EchoLandingPage() {
 
         <div className="flex items-center gap-4">
           <Link href="/developer" className="text-xs font-semibold text-[#466556] hover:text-[#1e6144] transition">
-            Endpoints & Extension ⚡
+            Download Extension 🧩
           </Link>
-          <a
-            href="https://github.com/Arynkr07/Echo"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-semibold text-[#466556] hover:text-[#1e6144] transition flex items-center gap-1"
-          >
-            <span>GitHub</span>
-            <span className="text-[10px]">↗</span>
-          </a>
           <Link
             href="/login"
             className="bg-[#1e6144] hover:bg-[#164d36] text-white font-bold px-5 py-2.5 rounded-2xl text-xs transition shadow-sm"
@@ -129,14 +120,6 @@ export default function EchoLandingPage() {
           >
             <span>🧩 Download Extension</span>
           </Link>
-          <a
-            href="https://github.com/Arynkr07/Echo"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-white border border-[#dce6e1] text-[#466556] font-semibold px-6 py-3.5 rounded-2xl text-sm hover:border-[#1e6144] transition shadow-xs"
-          >
-            ★ Star on GitHub
-          </a>
         </div>
 
         {/* Video Preview */}
@@ -248,16 +231,8 @@ export default function EchoLandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-6 text-center text-[11px] text-[#718b7f] border-t border-[#e2eae5] flex flex-col sm:flex-row items-center justify-between max-w-7xl mx-auto px-6 w-full gap-2">
-        <span>© 2026 ECHO Workspace Intelligence. Powered by Whisper STT & Firebase Auth.</span>
-        <a
-          href="https://github.com/Arynkr07/Echo"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[#1e6144] hover:underline font-semibold"
-        >
-          View Source Repository on GitHub ↗
-        </a>
+      <footer className="py-6 text-center text-[11px] text-[#718b7f] border-t border-[#e2eae5] flex flex-col sm:flex-row items-center justify-center max-w-7xl mx-auto px-6 w-full gap-2">
+        <span>© 2026 ECHO Workspace Intelligence. Powered by Whisper STT &amp; Firebase Auth.</span>
       </footer>
     </div>
   );

@@ -17,7 +17,8 @@
   ],
 
   "host_permissions": [
-    "https://meet.google.com/*"
+    "https://meet.google.com/*",
+    "http://localhost:3000/*"
   ],
 
   "content_scripts": [
@@ -27,6 +28,15 @@
       ],
       "js": [
         "content/content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://localhost:3000/*"
+      ],
+      "js": [
+        "content/dashboard-sync.js"
       ],
       "run_at": "document_idle"
     }

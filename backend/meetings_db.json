@@ -421,5 +421,35 @@
     "decisions": [],
     "action_items": [],
     "sentiment_score": 55
+  },
+  "echo-1790860057475-7dfd": {
+    "id": "echo-1790860057475-7dfd",
+    "status": "ended",
+    "started_at": "2026-10-01T18:37:37.520352",
+    "ended_at": "2026-10-01T18:38:03.627871",
+    "tab_url": "https://meet.google.com/pmb-kqxb-btn",
+    "transcript": [
+      {
+        "meeting_id": "echo-1790860057475-7dfd",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 25.14,
+        "text": "Window now! Oh! And since we have an entire city to build, some of these houses are gonna get built pretty fast in this video, which is why it's already time to put the roof on the first house. I hope I don't screw this up. Get it? Cuz I'm putting in a screw? If I tried to build every house by myself, it'd take all year. Let's send in the reinforcements. Now we just do this over and over again until we have a roof. And then we do everything you just saw nine more times until you have a roof.",
+        "language": "en",
+        "language_probability": 1.0
+      }
+    ],
+    "summary": "The transcript outlines an accelerated building process for an entire city, beginning with the immediate task of roofing the first house. To manage the large scale and expedite construction, the speaker announces the deployment of reinforcements. The process of building roofs is described as repetitive, to be completed multiple times for different houses.",
+    "decisions": [
+      "Send in reinforcements to expedite house construction"
+    ],
+    "action_items": [
+      {
+        "task": "Send in reinforcements",
+        "owner": "unknown",
+        "deadline": null
+      }
+    ],
+    "sentiment_score": 88
   }
 }

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
-import { api, TranscriptItem, TaskItem, DashboardMetrics, MeetingSummary } from "@/lib/api";
+import { api, TranscriptItem, TaskItem, DashboardMetrics, MeetingSummary, setApiUser } from "@/lib/api";
 
 export default function EchoDashboard() {
   const router = useRouter();
@@ -16,6 +16,9 @@ export default function EchoDashboard() {
   const [transcriptList, setTranscriptList] = useState<TranscriptItem[]>([]);
   const [intelligence, setIntelligence] = useState<MeetingSummary | null>(null);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
+
+  const [customName, setCustomName] = useState("");
+  const [isEditingName, setIsEditingName] = useState(false);
 
   const loadMeetingData = useCallback(async (meetingId: string) => {
     const [transcript, summary] = await Promise.all([
@@ -29,41 +32,55 @@ export default function EchoDashboard() {
     }
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (!currentUser) router.push("/login");
-      else setUser(currentUser);
-    });
+  const checkActiveMeeting = useCallback(async () => {
+    const meeting = await api.getLatestMeeting();
+    if (meeting && meeting.status === "active") {
+      setActiveMeetingId(meeting.id);
+      loadMeetingData(meeting.id);
+    } else {
+      setActiveMeetingId(null);
+      setTranscriptList([]);
+      setIntelligence(null);
+      setTasks([]);
+    }
+  }, [loadMeetingData]);
 
-    // Load metrics and latest meeting on mount
-    api.getDashboardMetrics().then(setMetrics);
-    api.getLatestMeeting().then((meeting) => {
-      if (meeting) {
-        setActiveMeetingId(meeting.id);
-        loadMeetingData(meeting.id);
+  useEffect(() => {
+    const savedName = localStorage.getItem("echo_username");
+    if (savedName) setCustomName(savedName);
+
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (!currentUser) {
+        router.push("/login");
+      } else {
+        setUser(currentUser);
+        setApiUser(currentUser.uid);
       }
     });
 
-    // Poll transcript and metrics every 4 seconds
+    api.getDashboardMetrics().then(setMetrics);
+    checkActiveMeeting();
+
     const interval = setInterval(() => {
       api.getDashboardMetrics().then(setMetrics);
-      api.getLatestMeeting().then((meeting) => {
-        if (meeting) {
-          setActiveMeetingId(meeting.id);
-          loadMeetingData(meeting.id);
-        }
-      });
+      checkActiveMeeting();
     }, 4000);
 
     return () => {
       unsubscribe();
       clearInterval(interval);
     };
-  }, [router, loadMeetingData]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [router, checkActiveMeeting]);
 
   const handleSignOut = async () => {
     await signOut(auth);
     router.push("/login");
+  };
+
+  const handleSaveName = (newName: string) => {
+    setCustomName(newName);
+    localStorage.setItem("echo_username", newName);
+    setIsEditingName(false);
   };
 
   const toggleTask = (id: number) => {
@@ -82,18 +99,12 @@ export default function EchoDashboard() {
             <Link href="/dashboard" className="w-10 h-10 rounded-xl bg-[#e8f3ed] text-[#1e6144] font-bold flex items-center justify-center text-sm shadow-xs" title="Dashboard">
               ⊞
             </Link>
-            <Link href="/developer" className="w-10 h-10 rounded-xl text-[#7f998c] hover:bg-[#f4f7f5] flex items-center justify-center text-sm transition" title="Developer Endpoints">
-              ⚡
+            <Link href="/dashboard/history" className="w-10 h-10 rounded-xl text-[#7f998c] hover:bg-[#f4f7f5] flex items-center justify-center text-sm transition" title="Past Meetings History">
+              🕒
             </Link>
-            <a
-              href="https://github.com/Arynkr07/Echo"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-10 h-10 rounded-xl text-[#7f998c] hover:text-[#1e6144] hover:bg-[#f4f7f5] flex items-center justify-center text-base transition"
-              title="GitHub Repository"
-            >
-              🐙
-            </a>
+            <Link href="/developer" className="w-10 h-10 rounded-xl text-[#7f998c] hover:bg-[#f4f7f5] flex items-center justify-center text-sm transition" title="Download Extension">
+              🧩
+            </Link>
           </nav>
         </div>
 
@@ -107,10 +118,28 @@ export default function EchoDashboard() {
         {/* Top Header */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#163a2b]">
-              Good morning, {user?.displayName || user?.email?.split("@")[0] || "Member"} 👋
+            <h1 className="text-2xl font-bold tracking-tight text-[#163a2b] flex items-center gap-2">
+              Good morning,{" "}
+              {isEditingName ? (
+                <input
+                  type="text"
+                  autoFocus
+                  defaultValue={customName || user?.displayName || user?.email?.split("@")[0] || "Member"}
+                  onBlur={(e) => handleSaveName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSaveName(e.currentTarget.value)}
+                  className="bg-transparent border-b-2 border-[#1e6144] outline-none text-[#163a2b] font-bold focus:ring-0 max-w-[150px]"
+                />
+              ) : (
+                <span 
+                  className="cursor-pointer hover:text-[#1e6144] transition underline decoration-dashed decoration-[#c4e3d1] underline-offset-4"
+                  onClick={() => setIsEditingName(true)}
+                  title="Click to edit name"
+                >
+                  {customName || user?.displayName || user?.email?.split("@")[0] || "Member"}
+                </span>
+              )} 👋
             </h1>
-            <p className="text-xs text-[#6e8a7d] mt-0.5">
+            <p className="text-xs text-[#6e8a7d] mt-1">
               {activeMeetingId
                 ? <>Active Meeting: <strong className="text-[#1e6144] font-mono">{activeMeetingId}</strong></>
                 : <span className="text-[#9ab5a8]">No meetings recorded yet — start the extension to begin</span>
@@ -122,17 +151,8 @@ export default function EchoDashboard() {
               href="/developer"
               className="text-xs font-semibold text-[#1e6144] bg-[#e8f3ed] border border-[#cde4d7] hover:bg-[#dcf0e4] px-4 py-1.5 rounded-full transition"
             >
-              API Hub & Extension ⚡
+              Download Extension 🧩
             </Link>
-            <a
-              href="https://github.com/Arynkr07/Echo"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-semibold text-[#466556] bg-white border border-[#dce6e1] hover:border-[#1e6144] px-3.5 py-1.5 rounded-full transition flex items-center gap-1.5"
-            >
-              <span>GitHub</span>
-              <span className="text-[10px]">↗</span>
-            </a>
             <button
               onClick={handleSignOut}
               className="text-xs font-semibold text-[#466556] bg-white border border-[#dce6e1] hover:border-[#1e6144] px-4 py-1.5 rounded-full transition shadow-xs cursor-pointer"

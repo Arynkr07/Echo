@@ -14,7 +14,8 @@ Endpoints:
 """
 
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Header
+from typing import Optional
 import services.meeting_service as meeting_service
 import services.llm_service as llm_service
 
@@ -33,9 +34,9 @@ def _format_time(seconds: float) -> str:
 # ─── Start / End ──────────────────────────────────────────────────────────────
 
 @router.post("/api/meeting/start")
-async def start_meeting():
+async def start_meeting(x_user_id: Optional[str] = Header(None)):
     """Create a new meeting and return its ID."""
-    meeting = meeting_service.create_meeting()
+    meeting = meeting_service.create_meeting(user_id=x_user_id or "anonymous")
     return {
         "meeting_id": meeting["id"],
         "status":     meeting["status"],
@@ -44,11 +45,11 @@ async def start_meeting():
 
 
 @router.post("/api/meeting/end/{meeting_id}")
-async def end_meeting(meeting_id: str, background_tasks: BackgroundTasks):
+async def end_meeting(meeting_id: str, background_tasks: BackgroundTasks, x_user_id: Optional[str] = Header(None)):
     """End a meeting. Triggers AI analysis in the background."""
-    meeting = meeting_service.end_meeting(meeting_id)
+    meeting = meeting_service.end_meeting(meeting_id, user_id=x_user_id)
     if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+        raise HTTPException(status_code=404, detail="Meeting not found or unauthorized")
 
     transcript = meeting_service.get_transcript(meeting_id)
     if transcript:
@@ -65,18 +66,18 @@ async def end_meeting(meeting_id: str, background_tasks: BackgroundTasks):
 # ─── List / Get ───────────────────────────────────────────────────────────────
 
 @router.get("/api/meeting")
-async def list_meetings():
+async def list_meetings(x_user_id: Optional[str] = Header(None)):
     """List all meetings (lightweight — includes content flags for smart selection)."""
-    meetings = meeting_service.list_meetings()
+    meetings = meeting_service.list_meetings(user_id=x_user_id)
     return meetings
 
 
 @router.get("/api/meeting/{meeting_id}")
-async def get_meeting(meeting_id: str):
+async def get_meeting(meeting_id: str, x_user_id: Optional[str] = Header(None)):
     """Get full meeting info including AI results (if ready)."""
-    meeting = meeting_service.get_meeting(meeting_id)
+    meeting = meeting_service.get_meeting(meeting_id, user_id=x_user_id)
     if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+        raise HTTPException(status_code=404, detail="Meeting not found or unauthorized")
     return {
         "id":                  meeting["id"],
         "status":              meeting["status"],
@@ -85,18 +86,18 @@ async def get_meeting(meeting_id: str):
         "summary":             meeting["summary"],
         "decisions":           meeting["decisions"],
         "action_items":        meeting["action_items"],
-        "transcript_segments": len(meeting["transcript"])
+        "transcript_segments": len(meeting.get("transcript", []))
     }
 
 
 @router.get("/api/meeting/{meeting_id}/transcript")
-async def get_transcript(meeting_id: str):
+async def get_transcript(meeting_id: str, x_user_id: Optional[str] = Header(None)):
     """Return all transcript segments with formatted timestamps."""
-    transcript = meeting_service.get_transcript(meeting_id)
-    if transcript is None:
-        raise HTTPException(status_code=404, detail="Meeting not found")
-
-    meeting = meeting_service.get_meeting(meeting_id)
+    meeting = meeting_service.get_meeting(meeting_id, user_id=x_user_id)
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found or unauthorized")
+    
+    transcript = meeting.get("transcript", [])
     first = meeting.get("transcript", [{}])[0] if meeting.get("transcript") else {}
 
     # Map backend segment shape → frontend TranscriptItem shape
@@ -124,11 +125,11 @@ async def get_transcript(meeting_id: str):
 
 
 @router.get("/api/meeting/{meeting_id}/summary")
-async def get_summary(meeting_id: str):
+async def get_summary(meeting_id: str, x_user_id: Optional[str] = Header(None)):
     """Return AI-generated summary, decisions, and action items."""
-    meeting = meeting_service.get_meeting(meeting_id)
+    meeting = meeting_service.get_meeting(meeting_id, user_id=x_user_id)
     if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+        raise HTTPException(status_code=404, detail="Meeting not found or unauthorized")
 
     # Return cached result if available
     if meeting.get("summary"):

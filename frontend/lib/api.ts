@@ -38,22 +38,43 @@ export interface Meeting {
   ended_at: string | null;
 }
 
-export const api = {
-  /** Get the most recently recorded meeting ID from the backend. */
-  async getLatestMeeting(): Promise<Meeting | null> {
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/meeting`, { cache: "no-store" });
-      if (!res.ok) return null;
-      const meetings: Meeting[] = await res.json();
-      if (!meetings.length) return null;
+let currentUserId = "anonymous";
 
-      // Sort descending by started_at and return the newest meeting
+export const setApiUser = (uid: string) => {
+  currentUserId = uid;
+  // Also save to localStorage so the Chrome Extension content script can read it
+  if (typeof window !== "undefined") {
+    localStorage.setItem("echo_user_id", uid);
+  }
+};
+
+const getHeaders = () => ({
+  "Content-Type": "application/json",
+  "x-user-id": currentUserId,
+});
+
+export const api = {
+  /** Get all meetings from the backend, sorted newest first. */
+  async getAllMeetings(): Promise<Meeting[]> {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/meeting`, {
+        headers: getHeaders(),
+        cache: "no-store",
+      });
+      if (!res.ok) return [];
+      const meetings: Meeting[] = await res.json();
       return meetings.sort(
         (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
-      )[0];
+      );
     } catch {
-      return null;
+      return [];
     }
+  },
+
+  /** Get the most recently recorded meeting ID from the backend. */
+  async getLatestMeeting(): Promise<Meeting | null> {
+    const meetings = await this.getAllMeetings();
+    return meetings.length > 0 ? meetings[0] : null;
   },
 
   /** Fetch transcript segments for a given meeting. */
@@ -61,11 +82,10 @@ export const api = {
     try {
       const res = await fetch(
         `${BACKEND_URL}/api/meeting/${meetingId}/transcript`,
-        { cache: "no-store" }
+        { headers: getHeaders(), cache: "no-store" }
       );
       if (!res.ok) throw new Error("Failed to fetch transcript");
       const data = await res.json();
-      // Backend returns { segments: [{ speaker, time, text, ... }] }
       return (data.segments || []) as TranscriptItem[];
     } catch {
       return [];
@@ -77,10 +97,9 @@ export const api = {
     try {
       const res = await fetch(
         `${BACKEND_URL}/api/meeting/${meetingId}/summary`,
-        { cache: "no-store" }
+        { headers: getHeaders(), cache: "no-store" }
       );
       if (!res.ok) throw new Error("Failed to fetch meeting intelligence");
-      // Backend already returns { summary, decisions, actions: [{ id, title, owner, due, done }] }
       return await res.json();
     } catch {
       return null;
@@ -90,11 +109,10 @@ export const api = {
   /** Fetch aggregate dashboard metrics. */
   async getDashboardMetrics(): Promise<DashboardMetrics> {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/metrics`, { cache: "no-store" });
+      const res = await fetch(`${BACKEND_URL}/api/metrics`, { headers: getHeaders(), cache: "no-store" });
       if (!res.ok) throw new Error("Failed to fetch metrics");
       return await res.json();
     } catch {
-      // Fallback stub so the dashboard still renders offline
       return {
         totalMeetings: 0,
         transcribedPercent: 0,
@@ -113,7 +131,7 @@ export const api = {
     try {
       const res = await fetch(`${BACKEND_URL}/api/meeting/${meetingId}/question`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getHeaders(),
         body: JSON.stringify({ question }),
       });
       if (!res.ok) throw new Error("Failed to ask question");
