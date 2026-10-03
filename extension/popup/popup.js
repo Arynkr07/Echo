@@ -18,6 +18,16 @@ const footerHint    = document.getElementById('footerHint');
 let durationInterval = null;
 let startTime        = null;
 
+// ── Theme (dark by default, same as the landing page) ─────────
+const themeBtn = document.getElementById('themeBtn');
+const applyTheme = (t) => document.documentElement.setAttribute('data-theme', t);
+chrome.storage.local.get('echoTheme', ({ echoTheme }) => applyTheme(echoTheme === 'light' ? 'light' : 'dark'));
+themeBtn.addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    applyTheme(next);
+    chrome.storage.local.set({ echoTheme: next });
+});
+
 // ── Init: read current state from background ──────────────────
 (async () => {
     try {

@@ -3,11 +3,13 @@
 // Responsibilities:
 //   • Watch the Google Meet page for the active speaker
 //   • Send speaker + timestamp to background.js periodically
-//   • Show a small status overlay on the Meet page
-//   • Relay backend updates (transcript, AI notes) to the overlay
+//   • Show nothing on the Meet page (no overlay, no live transcript)
 // ============================================================
 
 console.log('[Echo] Content script loaded');
+
+// Remove any overlay left behind by an older version of the extension
+document.getElementById('echo-overlay')?.remove();
 
 // ── State ─────────────────────────────────────────────────────
 let speakerWatchInterval = null;
@@ -22,13 +24,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case 'START_SPEAKER_WATCH':
             meetingId = message.meetingId;
             startSpeakerWatch();
-            showOverlay('🔴 Echo: Recording', 'active');
             sendResponse({ ok: true });
             break;
 
         case 'STOP_SPEAKER_WATCH':
             stopSpeakerWatch();
-            showOverlay('⚫ Echo: Stopped', 'idle');
             sendResponse({ ok: true });
             break;
 
@@ -125,90 +125,6 @@ function stopSpeakerWatch() {
 }
 
 // ── Backend Update Handler ─────────────────────────────────────
-function handleBackendUpdate(data) {
-
-    switch (data.type) {
-
-        case 'transcript_update':
-            // Show the latest transcript line in the overlay tooltip
-            updateOverlayTranscript(data.text, data.speaker);
-            break;
-
-        case 'status':
-            if (data.message) updateOverlayStatus(data.message);
-            break;
-    }
-}
-
-// ── Status Overlay ────────────────────────────────────────────
-// A small floating badge on the Meet page so the user knows Echo is active.
-
-let overlayEl = null;
-
-function createOverlay() {
-
-    overlayEl = document.createElement('div');
-    overlayEl.id = 'echo-overlay';
-
-    Object.assign(overlayEl.style, {
-        position:     'fixed',
-        top:          '12px',
-        right:        '12px',
-        zIndex:       '2147483647',
-        background:   '#1a1a2e',
-        color:        '#e0e0e0',
-        fontFamily:   'system-ui, sans-serif',
-        fontSize:     '13px',
-        padding:      '8px 14px',
-        borderRadius: '20px',
-        boxShadow:    '0 4px 12px rgba(0,0,0,0.4)',
-        maxWidth:     '320px',
-        cursor:       'default',
-        userSelect:   'none',
-        transition:   'opacity 0.3s ease'
-    });
-
-    overlayEl.innerHTML = `
-        <span id="echo-status-icon">⚫</span>
-        <span id="echo-status-text" style="margin-left:6px;">Echo: Ready</span>
-        <div id="echo-transcript-line" style="
-            margin-top:4px;
-            font-size:11px;
-            color:#aaa;
-            display:none;
-            max-width:280px;
-            overflow:hidden;
-            text-overflow:ellipsis;
-            white-space:nowrap;
-        "></div>
-    `;
-
-    document.body.appendChild(overlayEl);
-}
-
-function showOverlay(text, state) {
-
-    if (!overlayEl) createOverlay();
-
-    const statusEl = document.getElementById('echo-status-text');
-    const iconEl   = document.getElementById('echo-status-icon');
-
-    if (statusEl) statusEl.textContent = text;
-    if (iconEl) {
-        iconEl.textContent = state === 'active' ? '🔴' : '⚫';
-    }
-}
-
-function updateOverlayStatus(text) {
-    const statusEl = document.getElementById('echo-status-text');
-    if (statusEl) statusEl.textContent = text;
-}
-
-function updateOverlayTranscript(text, speaker) {
-
-    const lineEl = document.getElementById('echo-transcript-line');
-    if (!lineEl) return;
-
-    lineEl.style.display = 'block';
-    lineEl.textContent   = speaker ? `${speaker}: ${text}` : text;
-}
+// Echo shows nothing on the Meet page: transcripts and notes live on the
+// dashboard only, so updates from the backend are intentionally ignored here.
+function handleBackendUpdate() {}

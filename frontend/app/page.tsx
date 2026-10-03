@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 /* ------------------------------------------------------------------ */
 /*  Echo landing page: converted from static HTML to a React + TSX    */
@@ -209,6 +210,7 @@ export default function EchoLanding() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem("echo-theme");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (saved === "light" || saved === "dark") setTheme(saved);
     } catch {
       /* storage unavailable */
@@ -464,12 +466,14 @@ export default function EchoLanding() {
 
       <nav>
         <a className="logo" href="#top">
-          <i />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="" width={30} height={30} style={{ borderRadius: 8 }} />
           echo
         </a>
         <a className="l" href="#call">How it works</a>
         <a className="l" href="#nobot">No bot</a>
         <a className="l" href="#attach">Attach</a>
+        <Link className="l" href="/dashboard">Dashboard</Link>
         <button className="tm" id="tm" type="button" aria-label="Switch light or dark mode" onClick={toggleTheme}>
           ◐
         </button>
@@ -488,7 +492,7 @@ export default function EchoLanding() {
             summary, the decisions and who owes what. No bot ever joins your call.
           </p>
           <div className="cta">
-            <a className="btn" data-mag href="#attach">Add Echo to Chrome</a>
+            <Link className="btn" data-mag href="/dashboard">Open Dashboard</Link>
             <a className="btn o" data-mag href="#call">Watch it work</a>
           </div>
           <div className="chips">
@@ -646,7 +650,7 @@ export default function EchoLanding() {
             <div className="card st">
               <h3>Download</h3>
               <p>Get the extension files from the project page.</p>
-              <a className="btn" data-mag href="https://github.com/Arynkr07/Echo">Download extension</a>
+              <Link className="btn" data-mag href="/developer">Install Guide</Link>
             </div>
             <div className="card st">
               <h3>Load it</h3>
@@ -666,7 +670,7 @@ export default function EchoLanding() {
       <footer>
         <div className="in">
           <span>Echo, built by Aryan Kumar, Riddhima Sinha and Ritika Kushwaha.</span>
-          <a href="https://github.com/Arynkr07/Echo">Project on GitHub</a>
+          <Link href="/dashboard">Go to Dashboard</Link>
         </div>
       </footer>
     </div>

@@ -1,170 +1,44 @@
-/* =====================================================
-   Echo Popup — Styles
-   ===================================================== */
+:root{--bg:#F5F7FA;--panel:#fff;--ink:#0A0E14;--mute:#58627A;--line:#DCE2EC;--g1:#00B87F;--g2:#0A8DE8;--g3:#E8307A;--onG:#06100C;--gr:linear-gradient(100deg,var(--g1),var(--g2) 55%,var(--g3))}
+:root[data-theme="dark"]{--bg:#06080C;--panel:#0E1219;--ink:#EEF2F7;--mute:#8A94A6;--line:#1B2230;--g1:#22F2A9;--g2:#2DB6FF;--g3:#FF4F9A}
 
-*, *::before, *::after { box-sizing: border-box; }
+*{box-sizing:border-box;margin:0;padding:0}
 
-body {
-    width: 280px;
-    min-height: 200px;
-    margin: 0;
-    padding: 16px;
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    font-size: 14px;
-    background: #0f0f1a;
-    color: #e0e0e0;
+body{
+    width:320px;
+    padding:18px;
+    background:var(--bg);
+    color:var(--ink);
+    font:400 14px/1.5 "Manrope","Segoe UI",system-ui,sans-serif;
 }
 
-/* ── Header ─────────────────────────────────────────── */
-.header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 14px;
-}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.logo{display:flex;align-items:center;gap:9px}
+.logo-dot{width:18px;height:18px;border-radius:50%;background:var(--gr);box-shadow:0 0 0 4px color-mix(in srgb,var(--g1) 25%,transparent)}
+.logo-text{font:800 22px "Sora","Segoe UI",sans-serif;letter-spacing:-.05em}
+.theme-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;font-size:14px}
 
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
+.headline{font:800 24px/1.08 "Sora","Segoe UI",sans-serif;letter-spacing:-.04em;margin-bottom:16px}
+.grad{background:var(--gr);-webkit-background-clip:text;background-clip:text;color:transparent}
 
-.logo-icon { font-size: 20px; }
+.pill{display:inline-flex;align-items:center;gap:8px;padding:5px 14px;border-radius:99px;font-size:12px;font-weight:700;border:1px solid var(--line);background:var(--panel);margin-bottom:14px}
+.pill-dot{width:8px;height:8px;border-radius:50%;background:var(--mute)}
+.pill-active{color:#ff4d6d;border-color:#ff4d6d}
+.pill-active .pill-dot{background:#ff4d6d;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.25}}
 
-.logo-text {
-    font-size: 18px;
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: -0.5px;
-}
+.meeting-info{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin-bottom:14px}
+.info-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:3px 0}
+.info-label{font-size:12px;color:var(--mute)}
+.info-value{font-size:13px;font-weight:700}
+.code{font-family:ui-monospace,Consolas,monospace;font-size:11px;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-.version {
-    font-size: 10px;
-    color: #666;
-}
+.error-box{background:color-mix(in srgb,var(--g3) 14%,transparent);color:var(--g3);border-radius:12px;padding:9px 12px;font-size:12px;margin-bottom:14px}
 
-/* ── Status Pill ─────────────────────────────────────── */
-.pill {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 14px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 500;
-    margin-bottom: 12px;
-}
+.actions{display:grid;gap:8px}
+.btn{display:block;width:100%;text-align:center;text-decoration:none;padding:13px;border:0;border-radius:99px;font:800 14px "Sora","Segoe UI",sans-serif;letter-spacing:-.02em;cursor:pointer}
+.btn:disabled{opacity:.6;cursor:default}
+.btn-start{background:var(--gr);color:var(--onG)}
+.btn-stop{background:#ff4d6d;color:#fff}
+.btn-ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
 
-.pill-idle    { background: #1e1e30; color: #888; }
-.pill-active  { background: #1a0020; color: #ff4d6d; }
-.pill-success { background: #0a1f0a; color: #4caf50; }
-
-.pill-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #555;
-    flex-shrink: 0;
-}
-
-.pill-idle   .pill-dot { background: #555; }
-.pill-active .pill-dot {
-    background: #ff4d6d;
-    animation: pulse 1.2s ease-in-out infinite;
-}
-.pill-success .pill-dot { background: #4caf50; }
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%       { opacity: 0.4; transform: scale(1.3); }
-}
-
-/* ── Meeting Info ─────────────────────────────────────── */
-.meeting-info {
-    background: #1a1a2e;
-    border-radius: 10px;
-    padding: 10px 14px;
-    margin-bottom: 12px;
-}
-
-.info-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 3px 0;
-}
-
-.info-label {
-    font-size: 11px;
-    color: #666;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.info-value {
-    font-size: 12px;
-    color: #ccc;
-}
-
-.code {
-    font-family: 'Consolas', monospace;
-    font-size: 11px;
-    background: #0f0f1a;
-    padding: 2px 6px;
-    border-radius: 4px;
-    max-width: 160px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* ── Error box ───────────────────────────────────────── */
-.error-box {
-    background: #2a0a0a;
-    border: 1px solid #5c1a1a;
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 12px;
-    color: #ff8080;
-    margin-bottom: 12px;
-    line-height: 1.4;
-}
-
-/* ── Buttons ─────────────────────────────────────────── */
-.actions { margin-bottom: 10px; }
-
-.btn {
-    display: block;
-    width: 100%;
-    padding: 11px;
-    border: none;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.15s, transform 0.1s;
-    letter-spacing: 0.2px;
-}
-
-.btn:active { transform: scale(0.97); }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.btn-start {
-    background: linear-gradient(135deg, #7c3aed, #4f46e5);
-    color: #fff;
-}
-.btn-start:hover:not(:disabled) { opacity: 0.9; }
-
-.btn-stop {
-    background: linear-gradient(135deg, #dc2626, #b91c1c);
-    color: #fff;
-}
-.btn-stop:hover:not(:disabled) { opacity: 0.9; }
-
-/* ── Footer ──────────────────────────────────────────── */
-.footer {
-    font-size: 11px;
-    color: #444;
-    text-align: center;
-    line-height: 1.4;
-}
+.footer{margin-top:14px;text-align:center;font-size:12px;color:var(--mute)}.logo-img{width:26px;height:26px;border-radius:7px;display:block}

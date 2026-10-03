@@ -1,31 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8" />
-    <title>Echo — AI Meeting Assistant</title>
+    <title>Echo</title>
     <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
 
-    <!-- Header -->
     <div class="header">
         <div class="logo">
-            <span class="logo-icon">🎙️</span>
-            <span class="logo-text">Echo</span>
+            <img class="logo-img" src="../icons/icon48.png" alt="" />
+            <span class="logo-text">echo</span>
         </div>
-        <span class="version">AI Meeting Assistant</span>
+        <button id="themeBtn" class="theme-btn" type="button" aria-label="Switch light or dark mode">◐</button>
     </div>
 
-    <!-- Status pill -->
+    <h1 class="headline">Be in the meeting.<br /><span class="grad">Echo takes the notes.</span></h1>
+
     <div id="statusPill" class="pill pill-idle">
         <span class="pill-dot"></span>
         <span id="statusText">Ready</span>
     </div>
 
-    <!-- Meeting info (shown while recording) -->
     <div id="meetingInfo" class="meeting-info" style="display:none">
         <div class="info-row">
-            <span class="info-label">Meeting ID</span>
+            <span class="info-label">Meeting</span>
             <span id="meetingIdText" class="info-value code">—</span>
         </div>
         <div class="info-row">
@@ -34,18 +33,16 @@
         </div>
     </div>
 
-    <!-- Error message -->
     <div id="errorBox" class="error-box" style="display:none">
         <span id="errorText"></span>
     </div>
 
-    <!-- Actions -->
     <div class="actions">
-        <button id="startBtn" class="btn btn-start">▶ Start Recording</button>
-        <button id="stopBtn"  class="btn btn-stop"  style="display:none">■ Stop Recording</button>
+        <button id="startBtn" class="btn btn-start">Start recording</button>
+        <button id="stopBtn"  class="btn btn-stop"  style="display:none">Stop recording</button>
+        <a id="dashBtn" class="btn btn-ghost" href="http://localhost:3000/dashboard" target="_blank" rel="noreferrer">Open dashboard</a>
     </div>
 
-    <!-- Footer hint -->
     <div class="footer">
         <span id="footerHint">Open Google Meet, then click Start.</span>
     </div>
