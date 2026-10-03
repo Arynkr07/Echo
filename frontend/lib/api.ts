@@ -38,7 +38,10 @@ export interface Meeting {
   ended_at: string | null;
 }
 
-let currentUserId = "anonymous";
+let currentUserId =
+  typeof window !== "undefined"
+    ? localStorage.getItem("echo_user_id") || "anonymous"
+    : "anonymous";
 
 export const setApiUser = (uid: string) => {
   currentUserId = uid;
@@ -48,10 +51,18 @@ export const setApiUser = (uid: string) => {
   }
 };
 
-const getHeaders = () => ({
-  "Content-Type": "application/json",
-  "x-user-id": currentUserId,
-});
+const getHeaders = () => {
+  const uid =
+    currentUserId !== "anonymous"
+      ? currentUserId
+      : typeof window !== "undefined"
+      ? localStorage.getItem("echo_user_id") || "anonymous"
+      : "anonymous";
+  return {
+    "Content-Type": "application/json",
+    "x-user-id": uid,
+  };
+};
 
 export const api = {
   /** Get all meetings from the backend, sorted newest first. */

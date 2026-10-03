@@ -63,7 +63,8 @@ Fires when user starts recording on Google Meet:
 {
   "type": "meeting_start",
   "meetingId": "echo-1727123456789-a3f2",
-  "tabUrl": "https://meet.google.com/abc-defg-hij"
+  "tabUrl": "https://meet.google.com/abc-defg-hij",
+  "userId": "firebase_user_uid"
 }
 ```
 
@@ -124,8 +125,10 @@ Sends transcribed segments back to the extension floating overlay:
 
 ## 4. REST API Endpoints (`http://localhost:8000`)
 
+> **Multi-Tenant Note:** All endpoints accept the request header `x-user-id: <firebase_uid>` to filter data and enforce user-level isolation. If omitted, the request defaults to `anonymous`.
+
 ### `GET /api/meeting`
-Returns lightweight list of all recorded meetings (sorted newest first):
+Returns lightweight list of all recorded meetings for the authenticated user (sorted newest first):
 ```json
 [
   {
