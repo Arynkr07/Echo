@@ -519,8 +519,8 @@ export default function EchoLanding() {
                 </div>
                 <div className="tiles">
                   <div className="tl"><span>A</span><em>Aryan</em></div>
-                  <div className="tl"><span>R</span><em>Riddhima</em></div>
-                  <div className="tl"><span>K</span><em>Ritika</em></div>
+                  <div className="tl"><span>R</span><em>Ritika</em></div>
+                  <div className="tl"><span>K</span><em>Riddhima</em></div>
                 </div>
                 <span className="nb" data-st="1">No bot in the call</span>
                 <div className="wave" data-st="2">
@@ -626,8 +626,8 @@ export default function EchoLanding() {
               </p>
               <div className="ro">
                 <div className="p"><span className="av">A</span>Aryan Kumar<em>Host</em></div>
-                <div className="p"><span className="av">R</span>Riddhima Sinha<em /></div>
-                <div className="p"><span className="av">K</span>Ritika Kushwaha<em /></div>
+                <div className="p"><span className="av">R</span>Ritika Kushwaha<em /></div>
+                <div className="p"><span className="av">K</span>Riddhima Sinha<em /></div>
                 <div className="p bot"><span className="av">B</span>Notetaker Bot<em>Waiting to be admitted</em></div>
               </div>
             </div>
@@ -669,7 +669,7 @@ export default function EchoLanding() {
 
       <footer>
         <div className="in">
-          <span>Echo, built by Aryan Kumar, Riddhima Sinha and Ritika Kushwaha.</span>
+          <span>Echo, built by Aryan Kumar, Ritika Kushwaha and  Riddhima Sinha.</span>
           <Link href="/dashboard">Go to Dashboard</Link>
         </div>
       </footer>
