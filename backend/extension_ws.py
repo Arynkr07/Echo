@@ -84,6 +84,7 @@ async def handle_connection(ws):
                 user_id    = msg.get("userId", "anonymous")
 
                 session.meeting_id = meeting_id
+                session.audio_chunks = []   # <-- FIX: clear old chunks from previous runs!
 
                 # Use the extension's meeting_id directly (don't generate a new one)
                 meeting_service.create_meeting_with_id(meeting_id, tab_url, user_id=user_id)
@@ -155,90 +156,110 @@ async def _transcribe_and_analyse(session: Session):
     if not session.audio_chunks or not session.meeting_id:
         return
 
-    meeting_id = session.meeting_id
+    meeting_id  = session.meeting_id
+    n_chunks    = len(session.audio_chunks)
     total_bytes = sum(len(c) for c in session.audio_chunks)
-    print(f"[Ext-WS] Transcribing {total_bytes / 1024:.1f} KB for {meeting_id}...")
+    print(f"[Ext-WS] Transcribing {n_chunks} chunks ({total_bytes / 1024:.1f} KB) for {meeting_id}...")
 
-    # Write accumulated webm chunks to a temp file
-    webm_path = TEMP_DIR / f"{meeting_id}.webm"
-    with open(webm_path, "wb") as f:
-        for chunk in session.audio_chunks:
-            f.write(chunk)
+    # Each chunk from the fixed offscreen.js is a self-contained WebM —
+    # transcribe them one-by-one and merge the segments with time offsets.
+    loop     = asyncio.get_event_loop()
+    whisper  = get_whisper()
+    all_segments: list[dict] = []
+    time_offset = 0.0        # running audio clock in seconds
 
-    await session.send({"type": "status", "message": "Transcribing with Whisper..."})
+    for idx, chunk_bytes in enumerate(session.audio_chunks):
+        chunk_path = TEMP_DIR / f"{meeting_id}_chunk{idx}.webm"
+        try:
+            chunk_path.write_bytes(chunk_bytes)
 
-    loop = asyncio.get_event_loop()
-    try:
-        whisper = get_whisper()
-        result = await loop.run_in_executor(
-            None,
-            whisper.transcribe_webm,
-            str(webm_path)
-        )
-
-        meeting_service.add_transcript(meeting_id, result, speaker=session.current_speaker)
-
-        segments = result.get("segments", [])
-        language = result.get("language", "?")
-        prob     = result.get("language_probability", 0)
-
-        print(f"[Ext-WS] Transcription done: {len(segments)} segments, "
-              f"lang={language} ({prob:.0%})")
-
-        # Send each transcript segment back to the extension overlay
-        for seg in segments:
-            mins = int(seg["start"] // 60)
-            secs = int(seg["start"] % 60)
-            await session.send({
-                "type":      "transcript_update",
-                "meetingId": meeting_id,
-                "speaker":   session.current_speaker,
-                "text":      seg["text"],
-                "timestamp": f"{mins:02d}:{secs:02d}",
-                "language":  seg.get("language", language)
-            })
-
-        await session.send({"type": "status", "message": "Running AI analysis..."})
-
-        # Run Gemini analysis in background
-        transcript = meeting_service.get_transcript(meeting_id)
-        if transcript:
-            ai_result = await loop.run_in_executor(
+            result = await loop.run_in_executor(
                 None,
-                analyse_meeting,
-                transcript
+                whisper.transcribe_webm,
+                str(chunk_path)
             )
+
+            segs = result.get("segments", [])
+            print(f"[Ext-WS] Chunk {idx+1}/{n_chunks}: {len(segs)} segments")
+
+            for seg in segs:
+                all_segments.append({
+                    "start":    round(seg["start"] + time_offset, 2),
+                    "end":      round(seg["end"]   + time_offset, 2),
+                    "text":     seg["text"],
+                    "language": seg.get("language", "en"),
+                    "language_probability": seg.get("language_probability", 1.0),
+                })
+
+            # Advance clock by chunk duration (last segment end, or 5 s fallback)
+            if segs:
+                time_offset = all_segments[-1]["end"]
+            else:
+                time_offset += 5.0
+
+        except Exception as e:
+            print(f"[Ext-WS] Chunk {idx} transcription error: {e}")
+            time_offset += 5.0
+        finally:
+            if chunk_path.exists():
+                chunk_path.unlink()
+
+    print(f"[Ext-WS] Transcription done: {len(all_segments)} total segments")
+
+    merged_result = {
+        "language": "en",
+        "language_probability": 1.0,
+        "segments": all_segments,
+    }
+
+    meeting_service.add_transcript(meeting_id, merged_result, speaker=session.current_speaker)
+
+    # Send each segment back to the extension
+    for seg in all_segments:
+        mins = int(seg["start"] // 60)
+        secs = int(seg["start"] % 60)
+        await session.send({
+            "type":      "transcript_update",
+            "meetingId": meeting_id,
+            "speaker":   session.current_speaker,
+            "text":      seg["text"],
+            "timestamp": f"{mins:02d}:{secs:02d}",
+            "language":  seg.get("language", "en"),
+        })
+
+    await session.send({"type": "status", "message": "Running AI analysis..."})
+
+    # Run Gemini analysis
+    transcript = meeting_service.get_transcript(meeting_id)
+    if transcript:
+        try:
+            ai_result = await loop.run_in_executor(None, analyse_meeting, transcript)
             meeting_service.save_ai_results(
                 meeting_id,
                 ai_result["summary"],
                 ai_result["decisions"],
                 ai_result["action_items"],
-                ai_result.get("sentiment_score", 50)
+                ai_result.get("sentiment_score", 50),
             )
-
             await session.send({
                 "type":         "ai_update",
                 "meetingId":    meeting_id,
                 "summary":      ai_result["summary"],
                 "decisions":    ai_result["decisions"],
-                "action_items": ai_result["action_items"]
+                "action_items": ai_result["action_items"],
             })
-
             print(f"[Ext-WS] AI analysis done for {meeting_id}")
+        except Exception as e:
+            print(f"[Ext-WS] AI analysis error: {e}")
 
-        await session.send({
-            "type":    "status",
-            "message": f"Done! {len(segments)} segments transcribed."
-        })
+    await session.send({
+        "type":    "status",
+        "message": f"Done! {len(all_segments)} segments transcribed.",
+    })
 
-    except Exception as e:
-        print(f"[Ext-WS] Transcription/AI error: {type(e).__name__}: {e}")
-        await session.send({"type": "status", "message": f"Error: {e}"})
+    session.audio_chunks = []
 
-    finally:
-        if webm_path.exists():
-            webm_path.unlink()
-        session.audio_chunks = []
+
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

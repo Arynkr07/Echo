@@ -451,5 +451,324 @@
       }
     ],
     "sentiment_score": 88
+  },
+  "echo-1791441355752-6778": {
+    "id": "echo-1791441355752-6778",
+    "user_id": "dPRQ8iPteOZiw6JpMObrHUrLFzh2",
+    "status": "ended",
+    "started_at": "2026-10-08T12:05:56.494618",
+    "ended_at": "2026-10-08T12:06:23.819757",
+    "tab_url": "https://meet.google.com/mez-wmnt-vna",
+    "transcript": [
+      {
+        "meeting_id": "echo-1791441355752-6778",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 25.16,
+        "text": "Good morning everyone. Thank you for joining online. Let's discuss and get started. So today's discussion focuses on three key areas. We're doing progress on our current deliverables, addressing key bottlenecks, and blockboles.",
+        "language": "en",
+        "language_probability": 1.0
+      }
+    ],
+    "summary": "The meeting began with a welcome and an outline of the day's agenda. The discussion is set to focus on three key areas: reviewing progress on current deliverables, addressing key bottlenecks, and tackling blockboles (likely roadblocks).",
+    "decisions": [],
+    "action_items": [],
+    "sentiment_score": 85
+  },
+  "echo-1791441480360-aa97": {
+    "id": "echo-1791441480360-aa97",
+    "user_id": "dPRQ8iPteOZiw6JpMObrHUrLFzh2",
+    "status": "ended",
+    "started_at": "2026-10-08T12:08:00.361323",
+    "ended_at": "2026-10-08T12:08:41.539166",
+    "tab_url": "https://meet.google.com/mez-wmnt-vna",
+    "transcript": [],
+    "summary": null,
+    "decisions": [],
+    "action_items": []
+  },
+  "echo-1791441643912-f492": {
+    "id": "echo-1791441643912-f492",
+    "user_id": "dPRQ8iPteOZiw6JpMObrHUrLFzh2",
+    "status": "ended",
+    "started_at": "2026-10-08T12:10:43.913045",
+    "ended_at": "2026-10-08T12:12:09.938653",
+    "tab_url": "https://meet.google.com/mez-wmnt-vna",
+    "transcript": [],
+    "summary": null,
+    "decisions": [],
+    "action_items": []
+  },
+  "echo-1791441784320-9136": {
+    "id": "echo-1791441784320-9136",
+    "user_id": "dPRQ8iPteOZiw6JpMObrHUrLFzh2",
+    "status": "ended",
+    "started_at": "2026-10-08T12:13:04.322000",
+    "ended_at": "2026-10-08T12:13:56.138238",
+    "tab_url": "https://meet.google.com/mez-wmnt-vna",
+    "transcript": [],
+    "summary": null,
+    "decisions": [],
+    "action_items": []
+  },
+  "echo-1791441939864-45c4": {
+    "id": "echo-1791441939864-45c4",
+    "user_id": "dPRQ8iPteOZiw6JpMObrHUrLFzh2",
+    "status": "ended",
+    "started_at": "2026-10-08T12:15:39.865750",
+    "ended_at": "2026-10-08T12:16:10.675212",
+    "tab_url": "https://meet.google.com/mez-wmnt-vna",
+    "transcript": [],
+    "summary": null,
+    "decisions": [],
+    "action_items": []
+  },
+  "echo-1791442128896-c196": {
+    "id": "echo-1791442128896-c196",
+    "user_id": "dPRQ8iPteOZiw6JpMObrHUrLFzh2",
+    "status": "ended",
+    "started_at": "2026-10-08T12:18:48.898066",
+    "ended_at": "2026-10-08T12:19:06.570878",
+    "tab_url": "https://meet.google.com/mez-wmnt-vna",
+    "transcript": [],
+    "summary": null,
+    "decisions": [],
+    "action_items": []
+  },
+  "echo-1791443390609-49b0": {
+    "id": "echo-1791443390609-49b0",
+    "user_id": "anonymous",
+    "status": "ended",
+    "started_at": "2026-10-08T12:39:50.619342",
+    "ended_at": "2026-10-08T12:39:53.564671",
+    "tab_url": "https://meet.google.com/gpw-qrxo-ptg",
+    "transcript": [],
+    "summary": null,
+    "decisions": [],
+    "action_items": []
+  },
+  "echo-1791443445993-e45b": {
+    "id": "echo-1791443445993-e45b",
+    "user_id": "dPRQ8iPteOZiw6JpMObrHUrLFzh2",
+    "status": "ended",
+    "started_at": "2026-10-08T12:40:45.994710",
+    "ended_at": "2026-10-08T12:41:02.731618",
+    "tab_url": "https://meet.google.com/gpw-qrxo-ptg",
+    "transcript": [
+      {
+        "meeting_id": "echo-1791443445993-e45b",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 7.32,
+        "text": "and the next one.",
+        "language": "en",
+        "language_probability": 1.0
+      }
+    ],
+    "summary": "The provided transcript is too brief to offer a meaningful summary of the meeting's content or topics discussed. It only indicates a transition or movement to a subsequent item in an unknown sequence.",
+    "decisions": [],
+    "action_items": [],
+    "sentiment_score": 50
+  },
+  "echo-1791443497922-2c21": {
+    "id": "echo-1791443497922-2c21",
+    "user_id": "dPRQ8iPteOZiw6JpMObrHUrLFzh2",
+    "status": "ended",
+    "started_at": "2026-10-08T12:41:37.923513",
+    "ended_at": "2026-10-08T12:41:55.301022",
+    "tab_url": "https://meet.google.com/gpw-qrxo-ptg",
+    "transcript": [
+      {
+        "meeting_id": "echo-1791443497922-2c21",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 3.24,
+        "text": "This could take me too much.",
+        "language": "en",
+        "language_probability": 1.0
+      },
+      {
+        "meeting_id": "echo-1791443497922-2c21",
+        "speaker": "unknown",
+        "start": 3.24,
+        "end": 5.6,
+        "text": "This is literally the first thing that's gonna go bad.",
+        "language": "en",
+        "language_probability": 1.0
+      },
+      {
+        "meeting_id": "echo-1791443497922-2c21",
+        "speaker": "unknown",
+        "start": 5.6,
+        "end": 6.6,
+        "text": "Yes.",
+        "language": "en",
+        "language_probability": 1.0
+      }
+    ],
+    "summary": "The brief exchange reveals a discussion among participants about a particular task or item that is anticipated to be problematic. One participant expressed concern about the effort required, while another stated it would be the first thing to go wrong, to which a third participant agreed.",
+    "decisions": [],
+    "action_items": [],
+    "sentiment_score": 25
+  },
+  "echo-1791443631417-be35": {
+    "id": "echo-1791443631417-be35",
+    "user_id": "dPRQ8iPteOZiw6JpMObrHUrLFzh2",
+    "status": "ended",
+    "started_at": "2026-10-08T12:43:51.418923",
+    "ended_at": "2026-10-08T12:44:40.484522",
+    "tab_url": "https://meet.google.com/gpw-qrxo-ptg",
+    "transcript": [
+      {
+        "meeting_id": "echo-1791443631417-be35",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 7.2,
+        "text": "in calories of food, meaning if these four ever done in the history of banking, they let him sit right there in the room while they approved a loan.",
+        "language": "en",
+        "language_probability": 1.0
+      },
+      {
+        "meeting_id": "echo-1791443631417-be35",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 2.02,
+        "text": "from someone else's deposit.",
+        "language": "en",
+        "language_probability": 1.0
+      },
+      {
+        "meeting_id": "echo-1791443631417-be35",
+        "speaker": "unknown",
+        "start": 2.02,
+        "end": 3.9,
+        "text": "They just\u2026 open a computer.",
+        "language": "en",
+        "language_probability": 1.0
+      }
+    ],
+    "summary": "The brief discussion touches on historical banking practices, specifically the approval of a loan with an individual present, utilizing someone else's deposit. It contrasts this with a terse mention of modern methods, suggesting the simplicity of 'opening a computer.'",
+    "decisions": [],
+    "action_items": [],
+    "sentiment_score": 55
+  },
+  "echo-1791443924641-f951": {
+    "id": "echo-1791443924641-f951",
+    "user_id": "anonymous",
+    "status": "ended",
+    "started_at": "2026-10-08T12:48:44.658799",
+    "ended_at": "2026-10-08T12:49:26.727828",
+    "tab_url": "https://meet.google.com/gpw-qrxo-ptg",
+    "transcript": [
+      {
+        "meeting_id": "echo-1791443924641-f951",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 19.92,
+        "text": "You can get money at times. That's why I created a team of friends to work with using SpaceX's GrokBot. Let me show you what I mean. This is a loan amount into your account and in that exact moment money is created. 10,000 bucks that didn't exist a minute ago is suddenly sitting in your",
+        "language": "en",
+        "language_probability": 1.0
+      },
+      {
+        "meeting_id": "echo-1791443924641-f951",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 1.44,
+        "text": "Thank you.",
+        "language": "en",
+        "language_probability": 1.0
+      }
+    ],
+    "summary": "The meeting covered the concept of money creation through loan deposits into an account, exemplified by 10,000 bucks appearing instantly. The speaker also mentioned forming a team of friends to work with, utilizing SpaceX's GrokBot.",
+    "decisions": [],
+    "action_items": [],
+    "sentiment_score": 88
+  },
+  "echo-1791444096121-ce0d": {
+    "id": "echo-1791444096121-ce0d",
+    "user_id": "anonymous",
+    "status": "ended",
+    "started_at": "2026-10-08T12:51:36.125482",
+    "ended_at": "2026-10-08T12:51:59.250859",
+    "tab_url": "https://meet.google.com/gpw-qrxo-ptg",
+    "transcript": [
+      {
+        "meeting_id": "echo-1791444096121-ce0d",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 19.92,
+        "text": "employee, self-employed, business owner, investor. And the one you're in decides whether you build wealth or spend your life chasing it. Today, I'm going to show you which one you're in, why you're stuck there, and how to cross over to the side that builds wealth. I learned this framework back in",
+        "language": "en",
+        "language_probability": 1.0
+      },
+      {
+        "meeting_id": "echo-1791444096121-ce0d",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 3.06,
+        "text": "from a book called Cash Flow Quadrant.",
+        "language": "en",
+        "language_probability": 1.0
+      }
+    ],
+    "summary": "The speaker introduces the 'Cash Flow Quadrant' framework, categorizing individuals as employee, self-employed, business owner, or investor, and explains its impact on wealth creation. The speaker plans to guide the audience on identifying their current quadrant, understanding why they might be stuck, and how to transition to a wealth-building quadrant. This framework was learned from the book 'Cash Flow Quadrant'.",
+    "decisions": [],
+    "action_items": [],
+    "sentiment_score": 85
+  },
+  "echo-1791444263017-e480": {
+    "id": "echo-1791444263017-e480",
+    "user_id": "dPRQ8iPteOZiw6JpMObrHUrLFzh2",
+    "status": "ended",
+    "started_at": "2026-10-08T12:54:23.018325",
+    "ended_at": "2026-10-08T12:54:37.662384",
+    "tab_url": "https://meet.google.com/gpw-qrxo-ptg",
+    "transcript": [
+      {
+        "meeting_id": "echo-1791444263017-e480",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 19.16,
+        "text": "Hello, my name is Ayrul Ruhar and this is the testing phase. Hello, hello, hello, hello, 3, 2, 4, 1, 7, 9, 8.",
+        "language": "en",
+        "language_probability": 1.0
+      },
+      {
+        "meeting_id": "echo-1791444263017-e480",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 4.52,
+        "text": "Thank you.",
+        "language": "en",
+        "language_probability": 1.0
+      }
+    ],
+    "summary": "The transcript captures an individual named Ayrul Ruhar introducing themselves and stating that the current activity is a 'testing phase'. This was followed by a sequence of numbers and a brief acknowledgment. The interaction appears to be a functional test or system check rather than a substantive meeting.",
+    "decisions": [],
+    "action_items": [],
+    "sentiment_score": 50
+  },
+  "echo-1791444716657-274a": {
+    "id": "echo-1791444716657-274a",
+    "user_id": "anonymous",
+    "status": "ended",
+    "started_at": "2026-10-08T13:01:56.679485",
+    "ended_at": "2026-10-08T13:02:06.080421",
+    "tab_url": "https://meet.google.com/gpw-qrxo-ptg",
+    "transcript": [
+      {
+        "meeting_id": "echo-1791444716657-274a",
+        "speaker": "unknown",
+        "start": 0,
+        "end": 8.82,
+        "text": "Hello, hello, hello. Hello, hello, hello.",
+        "language": "en",
+        "language_probability": 1.0
+      }
+    ],
+    "summary": "The meeting consisted solely of repeated greetings by an unknown speaker, suggesting a sound check or initial setup phase rather than substantive discussion.",
+    "decisions": [],
+    "action_items": [],
+    "sentiment_score": 50
   }
 }

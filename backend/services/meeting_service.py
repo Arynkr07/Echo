@@ -94,6 +94,20 @@ def get_meeting(meeting_id: str, user_id: str = None) -> dict | None:
     return meeting
 
 
+def delete_meeting(meeting_id: str, user_id: str = None) -> bool:
+    _meetings = _load_db()
+    meeting = _meetings.get(meeting_id)
+    if not meeting:
+        return False
+    meeting_user = meeting.get("user_id", "anonymous")
+    if user_id and user_id != "anonymous" and meeting_user != "anonymous" and meeting_user != user_id:
+        return False
+    del _meetings[meeting_id]
+    _save_db(_meetings)
+    print(f"[MeetingService] Deleted meeting: {meeting_id}")
+    return True
+
+
 def end_meeting(meeting_id: str, user_id: str = None) -> dict | None:
     _meetings = _load_db()
     meeting = _meetings.get(meeting_id)

@@ -69,6 +69,21 @@ export default function HistoryPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDelete = async (mId: string) => {
+    if (!confirm("Are you sure you want to delete this meeting?")) return;
+    const ok = await api.deleteMeeting(mId);
+    if (ok) {
+      setMeetings((prev) => prev.filter((m) => m.id !== mId));
+      if (selected?.id === mId) {
+        setSelected(null);
+        setTranscript([]);
+        setSummary(null);
+      }
+    } else {
+      alert("Failed to delete meeting.");
+    }
+  };
+
   return (
     <AppShell active="history" onSignOut={handleSignOut}>
       <main className="ec-wrap">
@@ -97,7 +112,7 @@ export default function HistoryPage() {
                 >
                   <b title={m.id}>{m.id}</b>
                   <span>
-                    {new Date(m.started_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })} ·{" "}
+                    {new Date(m.started_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })} •{" "}
                     {new Date(m.started_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </span>
                 </button>
@@ -114,11 +129,16 @@ export default function HistoryPage() {
               <>
                 <div className="ec-title">
                   <span>{selected.id}</span>
-                  {transcript.length > 0 && (
-                    <button className="ec-btn o" type="button" onClick={copy}>
-                      {copied ? "Copied" : "Copy transcript"}
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="ec-btn o" type="button" onClick={() => handleDelete(selected.id)} style={{ color: '#ff4f9a', borderColor: '#ff4f9a' }}>
+                      Delete
                     </button>
-                  )}
+                    {transcript.length > 0 && (
+                      <button className="ec-btn o" type="button" onClick={copy}>
+                        {copied ? "Copied" : "Copy transcript"}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <p style={{ color: "var(--mute)", fontSize: ".85rem", margin: "-6px 0 14px" }}>
                   Recorded {new Date(selected.started_at).toLocaleString()} · {transcript.length} segments

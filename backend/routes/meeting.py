@@ -255,3 +255,12 @@ def _run_ai_analysis(meeting_id: str, transcript: list):
         print(f"[Meeting] AI analysis done for {meeting_id}")
     except Exception as e:
         print(f"[Meeting] AI analysis failed for {meeting_id}: {e}")
+
+@router.delete('/api/meeting/{meeting_id}')
+async def delete_meeting_route(meeting_id: str, x_user_id: Optional[str] = Header(None)):
+    """Delete a meeting and all its data."""
+    success = meeting_service.delete_meeting(meeting_id, user_id=x_user_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Meeting not found or unauthorized")
+    return {"message": f"Meeting {meeting_id} deleted"}
+

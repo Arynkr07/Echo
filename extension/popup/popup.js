@@ -48,25 +48,38 @@ startBtn.addEventListener('click', async () => {
 
     hideError();
     startBtn.disabled = true;
-    setPill('Connecting…', 'idle');   // stay "idle" visually while connecting
+    setPill('Connecting…', 'idle');
     footerHint.textContent = 'Connecting to backend…';
 
-    try {
-
-        const resp = await chrome.runtime.sendMessage({ type: 'START_CAPTURE' });
-
-        if (resp?.success) {
-            setRecordingUI(resp.meetingId);
-        } else {
-            showError(resp?.error || 'Unknown error');
-            setIdleUI();
+    // Retry once if the WS connection isn't ready yet (cold start)
+    let resp = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+            resp = await chrome.runtime.sendMessage({ type: 'START_CAPTURE' });
+            if (resp?.success) break;
+            // If it's a connection error, wait 1.5s and retry once
+            if (attempt === 0 && resp?.error?.includes('reachable')) {
+                setPill('Retrying…', 'idle');
+                footerHint.textContent = 'Retrying backend connection…';
+                await new Promise(r => setTimeout(r, 1500));
+                continue;
+            }
+            break;
+        } catch (err) {
+            resp = { success: false, error: err.message || 'Could not start recording' };
+            break;
         }
+    }
 
-    } catch (err) {
-        showError(err.message || 'Could not start recording');
+    if (resp?.success) {
+        setRecordingUI(resp.meetingId);
+    } else {
+        const msg = resp?.error || 'Unknown error starting recording';
+        showError(msg);
         setIdleUI();
     }
 });
+
 
 // ── Stop button ───────────────────────────────────────────────
 stopBtn.addEventListener('click', async () => {

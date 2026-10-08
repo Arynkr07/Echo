@@ -153,6 +153,19 @@ export const api = {
     }
   },
 
+  /** Delete a meeting. */
+  async deleteMeeting(meetingId: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/meeting/${meetingId}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+
   /** Toggle a task's done status locally (tasks are not persisted separately). */
   toggleTaskStatus(tasks: TaskItem[], taskId: number): TaskItem[] {
     return tasks.map((t) => (t.id === taskId ? { ...t, done: !t.done } : t));
